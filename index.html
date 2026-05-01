@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZLEEP — Smart Sleep Monitor</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">Z</div>
+      <span class="brand-name">ZLEEP</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#dashboard" class="nav-item active" data-section="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="#monitor" class="nav-item" data-section="monitor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Monitor</span>
+      </a>
+      <a href="#history" class="nav-item" data-section="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Riwayat</span>
+      </a>
+      <a href="#profile" class="nav-item" data-section="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profil</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div id="device-status" class="device-status disconnected">
+        <span class="status-dot"></span>
+        <span id="status-label">Tidak Terhubung</span>
+      </div>
+      <button id="sidebar-connect-btn" class="btn-connect-sm" onclick="app.toggleConnect()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11v11h-11z"/><path d="M4 4l2.5 2.5"/><path d="M19.5 4 17 6.5"/><path d="M4 20l2.5-2.5"/><path d="M19.5 20 17 17.5"/><circle cx="12" cy="12" r="2"/></svg>
+        <span id="connect-btn-label">Hubungkan</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ────────────────────────────────────────────── -->
+  <div id="content">
+
+    <header id="header">
+      <button id="menu-toggle" onclick="app.toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h1 id="page-title">Dashboard</h1>
+      <div class="header-right">
+        <div id="header-status" class="header-status">
+          <span class="status-dot disconnected"></span>
+          <span id="header-status-label">Offline</span>
+        </div>
+        <div id="session-timer" class="session-timer hidden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="timer-display">00:00:00</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── CONNECT OVERLAY ───────────────────────────────── -->
+    <div id="connect-overlay" class="connect-overlay">
+      <div class="connect-card">
+        <div class="connect-logo">
+          <div class="logo-ring ring1"></div>
+          <div class="logo-ring ring2"></div>
+          <div class="logo-ring ring3"></div>
+          <span>Z</span>
+        </div>
+        <h2>Selamat Datang di ZLEEP</h2>
+        <p>Hubungkan bantal ZLEEP Anda untuk memantau pola tidur dan risiko kesehatan jantung secara real-time.</p>
+        <button class="btn-primary btn-lg" onclick="app.connect()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11v11h-11z"/><path d="M4 4l2.5 2.5"/><path d="M19.5 4 17 6.5"/><path d="M4 20l2.5-2.5"/><path d="M19.5 20 17 17.5"/><circle cx="12" cy="12" r="2"/></svg>
+          Hubungkan ZLEEP
+        </button>
+        <button class="btn-ghost btn-sm" onclick="app.connectDemo()">Mode Demo (tanpa perangkat)</button>
+        <p class="connect-note">Pastikan Bluetooth aktif dan perangkat ZLEEP dalam jangkauan</p>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD ─────────────────────────────────────── -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <h2>Dashboard</h2>
+        <button id="session-toggle-btn" class="btn-primary" onclick="app.toggleSession()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          <span id="session-btn-label">Mulai Sesi Tidur</span>
+        </button>
+      </div>
+
+      <div class="metrics-grid">
+        <!-- Sleep Quality -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Kualitas Tidur</span>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </div>
+          <div class="metric-value" id="sleep-quality-val">—</div>
+          <div class="metric-badge" id="sleep-quality-badge">Belum ada sesi</div>
+          <div class="metric-progress">
+            <div class="progress-bar" id="sleep-quality-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Sleep Position -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Posisi Tidur</span>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <div class="metric-value" id="sleep-position-val">—</div>
+          <div id="position-icon" class="position-icon">
+            <div class="position-body"></div>
+          </div>
+        </div>
+
+        <!-- Movement Index -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Indeks Gerakan</span>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="metric-value" id="movement-val">0.00</div>
+          <div class="gauge-container">
+            <canvas id="gauge-canvas" width="120" height="70"></canvas>
+          </div>
+        </div>
+
+        <!-- Heart Risk -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Risiko Kardiovaskular</span>
+            <svg class="metric-icon danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div class="metric-value" id="risk-val">—</div>
+          <div class="metric-badge" id="risk-badge">Monitoring...</div>
+        </div>
+
+        <!-- Circadian Rhythm -->
+        <div class="metric-card wide">
+          <div class="metric-header">
+            <span class="metric-label">Ritme Sirkadian</span>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="circadian-bar">
+            <div class="circadian-track">
+              <div class="circadian-marker" id="circadian-marker"></div>
+            </div>
+            <div class="circadian-labels">
+              <span>20:00</span><span>00:00</span><span>04:00</span><span>08:00</span>
+            </div>
+          </div>
+          <div class="circadian-info">
+            <span>Waktu tidur ideal: <strong id="ideal-sleep-time">21:30 – 23:00</strong></span>
+            <span id="circadian-status" class="badge-success">Ritme Normal</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MONITOR ────────────────────────────────────────── -->
+    <section id="section-monitor" class="section">
+      <div class="section-header">
+        <h2>Monitor Real-time</h2>
+        <div class="header-badges">
+          <span id="accel-badge" class="data-badge">IMU: —</span>
+          <span id="sample-rate-badge" class="data-badge">0 Hz</span>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span>Akselerometer (g) — 60 detik terakhir</span>
+          <div class="chart-legend">
+            <span class="legend-x">X</span>
+            <span class="legend-y">Y</span>
+            <span class="legend-z">Z</span>
+            <span class="legend-m">Magnitudo</span>
+          </div>
+        </div>
+        <canvas id="chart-accel" height="120"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span>Giroskop (°/s) — 60 detik terakhir</span>
+        </div>
+        <canvas id="chart-gyro" height="100"></canvas>
+      </div>
+
+      <div class="raw-data-grid">
+        <div class="raw-card">
+          <span class="raw-label">aX</span><span id="raw-ax" class="raw-value">0.00</span>
+        </div>
+        <div class="raw-card">
+          <span class="raw-label">aY</span><span id="raw-ay" class="raw-value">0.00</span>
+        </div>
+        <div class="raw-card">
+          <span class="raw-label">aZ</span><span id="raw-az" class="raw-value">0.00</span>
+        </div>
+        <div class="raw-card">
+          <span class="raw-label">gX</span><span id="raw-gx" class="raw-value">0.00</span>
+        </div>
+        <div class="raw-card">
+          <span class="raw-label">gY</span><span id="raw-gy" class="raw-value">0.00</span>
+        </div>
+        <div class="raw-card">
+          <span class="raw-label">gZ</span><span id="raw-gz" class="raw-value">0.00</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── HISTORY ────────────────────────────────────────── -->
+    <section id="section-history" class="section">
+      <div class="section-header">
+        <h2>Riwayat Tidur</h2>
+        <button class="btn-ghost" onclick="app.loadHistory()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.07-8.06"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header"><span>Kualitas Tidur — 7 Sesi Terakhir</span></div>
+        <canvas id="chart-history" height="120"></canvas>
+      </div>
+
+      <div id="sessions-list" class="sessions-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <p>Belum ada sesi tidur tercatat</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROFILE ─────────────────────────────────────────── -->
+    <section id="section-profile" class="section">
+      <div class="section-header"><h2>Profil & Personalisasi</h2></div>
+
+      <div class="profile-grid">
+        <div class="profile-card">
+          <h3>Data Pengguna</h3>
+          <div class="form-group">
+            <label>Nama</label>
+            <input type="text" id="pf-name" placeholder="Nama lengkap" />
+          </div>
+          <div class="form-group">
+            <label>Usia</label>
+            <input type="number" id="pf-age" placeholder="Usia (tahun)" min="10" max="100" />
+          </div>
+          <div class="form-group">
+            <label>Jenis Kelamin</label>
+            <select id="pf-gender">
+              <option value="">Pilih...</option>
+              <option value="M">Laki-laki</option>
+              <option value="F">Perempuan</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="app.saveProfile()">Simpan Profil</button>
+        </div>
+
+        <div class="profile-card">
+          <h3>Faktor Risiko Kesehatan</h3>
+          <div class="risk-checks">
+            <label class="risk-check"><input type="checkbox" id="rf-hypertension" /> Hipertensi</label>
+            <label class="risk-check"><input type="checkbox" id="rf-diabetes" /> Diabetes</label>
+            <label class="risk-check"><input type="checkbox" id="rf-obesity" /> Obesitas</label>
+            <label class="risk-check"><input type="checkbox" id="rf-smoker" /> Perokok</label>
+            <label class="risk-check"><input type="checkbox" id="rf-heart-history" /> Riwayat Penyakit Jantung</label>
+            <label class="risk-check"><input type="checkbox" id="rf-insomnia" /> Insomnia</label>
+          </div>
+          <button class="btn-secondary" onclick="app.saveRiskFactors()">Simpan Faktor Risiko</button>
+        </div>
+
+        <div class="profile-card">
+          <h3>Preferensi Tidur</h3>
+          <div class="form-group">
+            <label>Target Jam Tidur</label>
+            <input type="time" id="pf-bedtime" value="22:00" />
+          </div>
+          <div class="form-group">
+            <label>Target Durasi Tidur</label>
+            <select id="pf-duration">
+              <option value="6">6 jam</option>
+              <option value="7">7 jam</option>
+              <option value="8" selected>8 jam</option>
+              <option value="9">9 jam</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Frekuensi Notifikasi</label>
+            <select id="pf-notify">
+              <option value="off">Nonaktif</option>
+              <option value="session">Per sesi</option>
+              <option value="daily" selected>Harian</option>
+            </select>
+          </div>
+          <button class="btn-secondary" onclick="app.savePreferences()">Simpan Preferensi</button>
+        </div>
+
+        <div class="profile-card info-card">
+          <h3>Tentang ZLEEP</h3>
+          <p>Versi 1.0.0 — Smart Pillow dengan sensor IMU untuk deteksi pola tidur dan risiko kardiovaskular.</p>
+          <div class="research-title">
+            <strong>Judul Penelitian:</strong>
+            <em>ZLEEP: Pengembangan Sistem IoT Berbasis Sensor IMU pada Smart Pillow untuk Monitoring Kualitas Tidur dan Deteksi Dini Faktor Risiko Penyakit Jantung dan Stroke</em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- Mobile Bottom Nav -->
+<nav id="bottom-nav">
+  <a href="#dashboard" class="bnav-item active" data-section="dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>Dashboard</span>
+  </a>
+  <a href="#monitor" class="bnav-item" data-section="monitor">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>Monitor</span>
+  </a>
+  <a href="#history" class="bnav-item" data-section="history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Riwayat</span>
+  </a>
+  <a href="#profile" class="bnav-item" data-section="profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Profil</span>
+  </a>
+</nav>
+
+<!-- Toast notification -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/database.js"></script>
+<script src="js/bluetooth.js"></script>
+<script src="js/sleep.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
