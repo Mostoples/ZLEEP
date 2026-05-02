@@ -1,89 +1,75 @@
 class ZleepDatabase {
   constructor() {
-    this.userId    = this._getOrCreateUserId();
+    this._uid      = null;
     this.sessionId = null;
     this._realtimeRef = null;
   }
 
-  _getOrCreateUserId() {
-    let uid = localStorage.getItem('zleep_uid');
-    if (!uid) {
-      uid = 'user_' + Math.random().toString(36).slice(2, 10);
-      localStorage.setItem('zleep_uid', uid);
-    }
-    return uid;
+  setUid(uid) { this._uid = uid; }
+
+  get uid() {
+    // Fallback to localStorage UID for anonymous/guest users
+    if (this._uid) return this._uid;
+    let id = localStorage.getItem('zleep_uid');
+    if (!id) { id = 'guest_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('zleep_uid', id); }
+    return id;
   }
 
-  // ── SESSION ─────────────────────────────────────────────
+  // ── Session ──────────────────────────────────────────────
   startSession(meta = {}) {
-    const ref = db.ref(`users/${this.userId}/sessions`).push();
+    const ref = db.ref(`users/${this.uid}/sessions`).push();
     this.sessionId = ref.key;
-    ref.set({
-      startTime: firebase.database.ServerValue.TIMESTAMP,
-      status: 'active',
-      ...meta
-    });
+    ref.set({ startTime: firebase.database.ServerValue.TIMESTAMP, status: 'active', ...meta });
     return this.sessionId;
   }
 
   endSession(summary = {}) {
     if (!this.sessionId) return;
-    db.ref(`users/${this.userId}/sessions/${this.sessionId}`).update({
-      endTime: firebase.database.ServerValue.TIMESTAMP,
-      status: 'completed',
-      ...summary
+    db.ref(`users/${this.uid}/sessions/${this.sessionId}`).update({
+      endTime: firebase.database.ServerValue.TIMESTAMP, status: 'completed', ...summary
     });
     this.sessionId = null;
   }
 
-  // ── IMU DATA ─────────────────────────────────────────────
-  // Batch write every N seconds to avoid excessive DB writes
+  // ── IMU Realtime ─────────────────────────────────────────
   pushImuSample(imu) {
-    if (!this.sessionId) return;
-    // Write to realtime path (overwrites — latest value only)
-    db.ref(`realtime/${this.userId}/imu`).set(imu);
+    db.ref(`realtime/${this.uid}/imu`).set(imu);
   }
 
   flushImuBatch(batch) {
     if (!this.sessionId || !batch.length) return;
     const summary = {
       count: batch.length,
-      avgAx: _avg(batch, 'ax'), avgAy: _avg(batch, 'ay'), avgAz: _avg(batch, 'az'),
+      avgAx: _dbAvg(batch, 'ax'), avgAy: _dbAvg(batch, 'ay'), avgAz: _dbAvg(batch, 'az'),
       maxMag: Math.max(...batch.map(s => Math.sqrt(s.ax**2 + s.ay**2 + s.az**2))),
       ts: Date.now()
     };
-    db.ref(`users/${this.userId}/sessions/${this.sessionId}/batches`).push(summary);
+    db.ref(`users/${this.uid}/sessions/${this.sessionId}/batches`).push(summary);
   }
 
-  // ── REALTIME SUBSCRIBE ────────────────────────────────────
+  // ── Realtime subscribe ───────────────────────────────────
   subscribeRealtime(cb) {
-    this._realtimeRef = db.ref(`realtime/${this.userId}/imu`);
+    this._realtimeRef = db.ref(`realtime/${this.uid}/imu`);
     this._realtimeRef.on('value', snap => { if (snap.val()) cb(snap.val()); });
   }
-
   unsubscribeRealtime() {
     if (this._realtimeRef) { this._realtimeRef.off(); this._realtimeRef = null; }
   }
 
-  // ── HISTORY ──────────────────────────────────────────────
+  // ── History ──────────────────────────────────────────────
   getSessions(limit = 10) {
-    return db.ref(`users/${this.userId}/sessions`)
-      .orderByChild('startTime')
-      .limitToLast(limit)
-      .once('value')
-      .then(snap => snap.val() || {});
+    return db.ref(`users/${this.uid}/sessions`)
+      .orderByChild('startTime').limitToLast(limit)
+      .once('value').then(s => s.val() || {});
   }
 
-  // ── PROFILE ──────────────────────────────────────────────
+  // ── Profile ──────────────────────────────────────────────
   saveProfile(data) {
-    return db.ref(`users/${this.userId}/profile`).update(data);
+    return db.ref(`users/${this.uid}/profile`).update(data);
   }
-
   getProfile() {
-    return db.ref(`users/${this.userId}/profile`).once('value').then(s => s.val() || {});
+    return db.ref(`users/${this.uid}/profile`).once('value').then(s => s.val() || {});
   }
 }
 
-function _avg(arr, key) {
-  return arr.reduce((s, v) => s + v[key], 0) / arr.length;
-}
+function _dbAvg(arr, key) { return arr.reduce((s, v) => s + v[key], 0) / arr.length; }
