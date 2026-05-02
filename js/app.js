@@ -39,6 +39,9 @@ const app = (() => {
     if (!localStorage.getItem('zleep_ob_done')) {
       showOnboarding();
     }
+
+    if (window.ZleepScene) ZleepScene.init();
+    updateZcsDisplay();
   }
 
   // ── Onboarding ────────────────────────────────────────────
@@ -309,6 +312,7 @@ const app = (() => {
     updateBioAgeDisplay();
     updateAnalysisSection(summary, ahi);
     generateRecommendations();
+    updateZcsDisplay();
 
     showToast(`Sesi selesai — Kualitas: ${quality ?? '—'} | AHI: ${ahi}`);
     loadHistory(); // refresh history after session
@@ -343,6 +347,17 @@ const app = (() => {
 
     document.getElementById('accel-badge').textContent =
       `a: ${imu.ax.toFixed(2)}, ${imu.ay.toFixed(2)}, ${imu.az.toFixed(2)} g`;
+
+    if (window.ZleepScene) ZleepScene.updateCube(imu.ax, imu.ay, imu.az);
+
+    const pitch = Math.round(Math.atan2(imu.ay, Math.sqrt(imu.ax**2 + imu.az**2)) * 180 / Math.PI);
+    const roll  = Math.round(Math.atan2(-imu.ax, imu.az) * 180 / Math.PI);
+    const pitchEl = document.getElementById('imu-pitch');
+    const rollEl  = document.getElementById('imu-roll');
+    const pos3dEl = document.getElementById('imu-pos-3d');
+    if (pitchEl) pitchEl.textContent = pitch + '°';
+    if (rollEl)  rollEl.textContent  = roll  + '°';
+    if (pos3dEl) pos3dEl.textContent = SleepAnalysis.detectPosition(imu.ax, imu.ay, imu.az).label;
   }
 
   // Periodic analysis every 30s (respiratory, stage, OSA)
@@ -441,6 +456,13 @@ const app = (() => {
     document.getElementById('risk-val').className    = 'metric-value ' + rl.cls;
     document.getElementById('risk-badge').textContent = rl.label;
     document.getElementById('risk-badge').className   = 'metric-badge badge-' + rl.cls;
+
+    if (window.ZleepScene) ZleepScene.updateOrb(score || 0);
+
+    const orbNum = document.getElementById('orb-quality-num');
+    const orbLbl = document.getElementById('orb-quality-label');
+    if (orbNum) { orbNum.textContent = score ?? '—'; orbNum.className = 'orb-quality-num ' + cls; }
+    if (orbLbl) orbLbl.textContent = label;
   }
 
   function updateBioAgeDisplay() {
@@ -682,8 +704,9 @@ const app = (() => {
       </div>`;
     }).join('');
 
-    // Update bio age after loading history
+    // Update bio age and ZCS after loading history
     updateBioAgeDisplay();
+    updateZcsDisplay();
   }
 
   // ── Profile ───────────────────────────────────────────────
@@ -698,7 +721,7 @@ const app = (() => {
       weight: w || profile.weight
     };
     if (h && w) profile.bmi = +(w / ((h/100)**2)).toFixed(1);
-    zdb.saveProfile(profile); persist(); updateProfileCompletion(); showToast('Profil disimpan');
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); showToast('Profil disimpan');
   }
   function saveRiskFactors() {
     profile = { ...profile,
@@ -708,7 +731,7 @@ const app = (() => {
       smoker:       document.getElementById('rf-smoker').checked,
       heartHistory: document.getElementById('rf-heart-history').checked,
       insomnia:     document.getElementById('rf-insomnia').checked };
-    zdb.saveProfile(profile); persist(); updateProfileCompletion(); showToast('Faktor risiko disimpan');
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); showToast('Faktor risiko disimpan');
   }
   function savePreferences() {
     profile = { ...profile,
@@ -716,7 +739,7 @@ const app = (() => {
       duration: document.getElementById('pf-duration').value,
       activity: document.getElementById('pf-activity')?.value || 'moderate'
     };
-    zdb.saveProfile(profile); persist(); updateProfileCompletion(); showToast('Preferensi disimpan');
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); showToast('Preferensi disimpan');
   }
 
   function updateProfileCompletion() {
@@ -787,6 +810,37 @@ const app = (() => {
         : []
     });
     showToast('PDF berhasil diunduh');
+  }
+
+  // ── ZCS Display ──────────────────────────────────────────
+  function updateZcsDisplay() {
+    const zcs = SleepAnalysis.zcsScore(profile, sessions);
+
+    const valEl   = document.getElementById('zcs-val');
+    const badgeEl = document.getElementById('zcs-badge');
+    const barEl   = document.getElementById('zcs-bar');
+    const orbBadge = document.getElementById('orb-zcs-badge');
+    if (valEl)   { valEl.textContent = zcs.score; valEl.className = 'metric-value ' + zcs.level.cls; }
+    if (badgeEl) { badgeEl.textContent = `${zcs.level.label} — ${zcs.level.risk10yr}`; badgeEl.className = 'metric-badge badge-' + zcs.level.cls; }
+    if (barEl)   barEl.style.width = zcs.score + '%';
+    if (orbBadge){ orbBadge.textContent = `ZCS: ${zcs.score} (${zcs.level.label})`; orbBadge.className = 'metric-badge badge-' + zcs.level.cls; }
+
+    const detNum  = document.getElementById('zcs-detail-num');
+    const detLbl  = document.getElementById('zcs-detail-label');
+    const detRisk = document.getElementById('zcs-detail-risk');
+    if (detNum)  { detNum.textContent = zcs.score; detNum.className = 'zcs-score-num ' + zcs.level.cls; }
+    if (detLbl)  { detLbl.textContent = zcs.level.label; detLbl.className = 'zcs-score-label ' + zcs.level.cls; }
+    if (detRisk) detRisk.textContent = `Risiko 10 tahun: ${zcs.level.risk10yr}`;
+
+    const setBar = (fillId, valId, pts, max) => {
+      const b = document.getElementById(fillId);
+      const v = document.getElementById(valId);
+      if (b) b.style.width = (pts / max * 100).toFixed(1) + '%';
+      if (v) v.textContent = `${pts}/${max}`;
+    };
+    setBar('zcs-bar-a', 'zcs-val-a', zcs.domainA, 45);
+    setBar('zcs-bar-b', 'zcs-val-b', zcs.domainB, 40);
+    setBar('zcs-bar-c', 'zcs-val-c', zcs.domainC, 15);
   }
 
   // ── Circadian ─────────────────────────────────────────────

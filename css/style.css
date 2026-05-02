@@ -1139,6 +1139,84 @@ body::after {
   .auth-glass-card { padding: 32px 24px; }
 }
 
+/* ── THREE.JS CANVASES ────────────────────────────────────── */
+#particle-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#app { z-index: 2; }
+
+/* ── ORB HERO ─────────────────────────────────────────────── */
+.orb-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.orb-info { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.orb-greeting { font-size: 13px; color: var(--muted); font-weight: 600; }
+.orb-quality-num {
+  font-size: 64px; font-weight: 900;
+  font-variant-numeric: tabular-nums; line-height: 1;
+  background: linear-gradient(135deg, #fff 40%, rgba(180,170,255,0.7));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.orb-quality-num.good  { background: linear-gradient(135deg, var(--success), #86efac); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.orb-quality-num.warn  { background: linear-gradient(135deg, var(--warn), #fdba74);    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.orb-quality-num.danger{ background: linear-gradient(135deg, var(--danger), #fca5a5);  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.orb-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.orb-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 280px; }
+
+#orb-canvas { width: 220px; height: 220px; flex-shrink: 0; }
+
+/* ── ZCS (ZLEEP-CVD Score) CARDS ──────────────────────────── */
+.zcs-score-big { display: flex; align-items: baseline; gap: 12px; }
+.zcs-score-num { font-size: 48px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.zcs-score-num.good   { color: var(--success); }
+.zcs-score-num.warn   { color: var(--warn); }
+.zcs-score-num.danger { color: var(--danger); }
+.zcs-score-label { font-size: 14px; font-weight: 700; }
+.zcs-score-label.good   { color: var(--success); }
+.zcs-score-label.warn   { color: var(--warn); }
+.zcs-score-label.danger { color: var(--danger); }
+
+.zcs-bars { display: flex; flex-direction: column; gap: 8px; }
+.zcs-bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.zcs-bar-label { width: 90px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+.zcs-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.zcs-bar-fill  { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+.zcs-bar-val   { width: 44px; text-align: right; font-weight: 700; font-size: 11px; }
+
+/* ── IMU CUBE CARD ────────────────────────────────────────── */
+.cube-card {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.cube-info { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.cube-desc { font-size: 12px; color: var(--text-dim); line-height: 1.65; }
+
+#cube-canvas { width: 240px; height: 240px; flex-shrink: 0; }
+
+@media (max-width: 768px) {
+  .orb-hero { flex-direction: column-reverse; align-items: center; }
+  #orb-canvas { width: 180px; height: 180px; }
+  .cube-card { flex-direction: column; align-items: center; }
+  #cube-canvas { width: 200px; height: 200px; }
+}
+
 /* ── SCROLLBAR ────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

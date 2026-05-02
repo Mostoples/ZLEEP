@@ -227,6 +227,96 @@ const SleepAnalysis = {
     return                    { label: 'Buruk',         cls: 'danger' };
   },
 
+  // ── ZLEEP-CVD Score (ZCS) — SLR-backed model ─────────────
+  // Domain A (45): profile | Domain B (40): IMU sleep | Domain C (15): lifestyle
+  zcsScore(profile, sessions) {
+    const age = parseInt(profile.age) || 0;
+    const bmi = profile.bmi ||
+      (profile.height && profile.weight ? profile.weight / ((profile.height / 100) ** 2) : 0);
+
+    // Domain A: Profile (45 pts max)
+    let dA = 0;
+    if      (age >= 65) dA += 12;
+    else if (age >= 55) dA += 8;
+    else if (age >= 45) dA += 5;
+    else if (age >= 35) dA += 2;
+    if      (profile.gender === 'M') dA += 5;
+    else if (profile.gender === 'F') dA += 2;
+    if      (bmi >= 35)   dA += 10;
+    else if (bmi >= 30)   dA += 8;
+    else if (bmi >= 27.5) dA += 5;
+    else if (bmi >= 25)   dA += 3;
+    if (profile.hypertension) dA += 8;
+    if (profile.diabetes)     dA += 5;
+    if (profile.smoker)       dA += 5;
+    dA = Math.min(45, dA);
+
+    // Domain B: IMU Sleep (40 pts max)
+    let dB = 0;
+    const recent = sessions && sessions.length ? sessions.slice(-14) : [];
+    if (recent.length) {
+      const avgDur = _avg(recent.map(s => (s.durationMs || 0) / 3600000));
+      if      (avgDur < 5) dB += 12;
+      else if (avgDur < 6) dB += 8;
+      else if (avgDur < 7) dB += 4;
+      else if (avgDur > 9) dB += 2;
+
+      const avgQ = _avg(recent.map(s => s.qualityScore || 50));
+      if      (avgQ < 55) dB += 8;
+      else if (avgQ < 70) dB += 4;
+      else if (avgQ < 85) dB += 1;
+
+      const avgAhi = _avg(recent.map(s => s.ahiProxy || 0));
+      if      (avgAhi >= 30) dB += 8;
+      else if (avgAhi >= 15) dB += 6;
+      else if (avgAhi >= 5)  dB += 3;
+
+      dB += Math.round(Math.max(0, 1 - avgQ / 100) * 7);
+    } else {
+      dB = 8;
+    }
+    dB = Math.min(40, dB);
+
+    // Domain C: Lifestyle (15 pts max)
+    let dC = 0;
+    const act = profile.activity || 'moderate';
+    if      (act === 'none')     dC += 8;
+    else if (act === 'low')      dC += 4;
+    else if (act === 'moderate') dC += 1;
+
+    if (recent.length >= 3) {
+      const bts = recent
+        .filter(s => s.startTime)
+        .map(s => { const d = new Date(s.startTime); let h = d.getHours() + d.getMinutes() / 60; if (h < 6) h += 24; return h; });
+      if (bts.length >= 3) {
+        const bMean = _avg(bts);
+        const bSD   = Math.sqrt(_avg(bts.map(t => (t - bMean) ** 2)));
+        if      (bSD >= 3)   dC += 7;
+        else if (bSD >= 2)   dC += 5;
+        else if (bSD >= 1)   dC += 3;
+        else if (bSD >= 0.5) dC += 1;
+      }
+    }
+    dC = Math.min(15, dC);
+
+    let score = dA + dB + dC;
+
+    // Synergistic modifiers (SLR: compounding effects)
+    const avgQSync = recent.length ? _avg(recent.map(s => s.qualityScore || 50)) : 50;
+    if (profile.hypertension && profile.diabetes && avgQSync < 70)  score += 10;
+    if (bmi >= 30 && age >= 45 && avgQSync < 75)                    score += 8;
+    score = Math.min(100, score);
+
+    let level;
+    if      (score < 20) level = { label: 'Rendah',       cls: 'good',   risk10yr: '<5%'    };
+    else if (score < 40) level = { label: 'Sedang',       cls: 'warn',   risk10yr: '5–10%'  };
+    else if (score < 60) level = { label: 'Tinggi',       cls: 'warn',   risk10yr: '10–20%' };
+    else if (score < 80) level = { label: 'Sangat Tinggi',cls: 'danger', risk10yr: '20–30%' };
+    else                 level = { label: 'Kritis',       cls: 'danger', risk10yr: '>30%'   };
+
+    return { score, level, domainA: dA, domainB: dB, domainC: dC };
+  },
+
   // ── Cardiovascular Risk (0–100) ───────────────────────
   cardioRisk(profile, qualityScore, durationHrs) {
     let risk = 0;

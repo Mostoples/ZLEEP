@@ -1,0 +1,340 @@
+/* ZLEEP Three.js Scene Manager — Particle Field + Sleep Orb + IMU Cube */
+
+const ZleepScene = (() => {
+
+  const C = {
+    PURPLE:  0x7B6CF6,
+    VIOLET:  0xA78BFA,
+    TEAL:    0x22D3EE,
+    SUCCESS: 0x34D399,
+    WARN:    0xFB923C,
+    DANGER:  0xF87171,
+    WHITE:   0xFFFFFF,
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // 1. PARTICLE FIELD BACKGROUND
+  // ══════════════════════════════════════════════════════════
+  let pR, pScene, pCam, pPoints, pLineSegs;
+  const N = 110;
+  const pPos = new Float32Array(N * 3);
+  const pVel = new Float32Array(N * 3);
+  let pRunning = false;
+
+  function initParticles() {
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas || !window.THREE) return;
+
+    pR = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    pR.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    _resizeParticles();
+
+    pScene = new THREE.Scene();
+    pCam   = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
+    pCam.position.z = 500;
+
+    // Randomise particle start positions and velocities
+    for (let i = 0; i < N; i++) {
+      const W = window.innerWidth, H = window.innerHeight;
+      pPos[i*3]   = (Math.random() - .5) * W * 1.6;
+      pPos[i*3+1] = (Math.random() - .5) * H * 1.6;
+      pPos[i*3+2] = (Math.random() - .5) * 300;
+      pVel[i*3]   = (Math.random() - .5) * .35;
+      pVel[i*3+1] = (Math.random() - .5) * .25;
+      pVel[i*3+2] = (Math.random() - .5) * .1;
+    }
+
+    // Points
+    const dotGeo = new THREE.BufferGeometry();
+    dotGeo.setAttribute('position', new THREE.BufferAttribute(pPos.slice(), 3));
+    pPoints = new THREE.Points(dotGeo, new THREE.PointsMaterial({
+      color: C.VIOLET, size: 2.5, transparent: true, opacity: .65, sizeAttenuation: false
+    }));
+    pScene.add(pPoints);
+
+    // Line segments
+    const lGeo = new THREE.BufferGeometry();
+    const maxPairs = N * N;
+    lGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxPairs * 6), 3));
+    pLineSegs = new THREE.LineSegments(lGeo, new THREE.LineBasicMaterial({
+      color: C.PURPLE, transparent: true, opacity: .12
+    }));
+    pScene.add(pLineSegs);
+
+    window.addEventListener('resize', _resizeParticles);
+    pRunning = true;
+    _tickParticles();
+  }
+
+  function _resizeParticles() {
+    if (!pR) return;
+    pR.setSize(window.innerWidth, window.innerHeight);
+    if (pCam) { pCam.aspect = window.innerWidth / window.innerHeight; pCam.updateProjectionMatrix(); }
+  }
+
+  function _tickParticles() {
+    if (!pRunning) return;
+    requestAnimationFrame(_tickParticles);
+
+    const W = window.innerWidth * .8, H = window.innerHeight * .8;
+
+    // Update positions
+    for (let i = 0; i < N; i++) {
+      pPos[i*3]   += pVel[i*3];
+      pPos[i*3+1] += pVel[i*3+1];
+      pPos[i*3+2] += pVel[i*3+2];
+      if (pPos[i*3]   >  W) pPos[i*3]   = -W;
+      if (pPos[i*3]   < -W) pPos[i*3]   =  W;
+      if (pPos[i*3+1] >  H) pPos[i*3+1] = -H;
+      if (pPos[i*3+1] < -H) pPos[i*3+1] =  H;
+    }
+    const dotAttr = pPoints.geometry.attributes.position;
+    dotAttr.array.set(pPos);
+    dotAttr.needsUpdate = true;
+
+    // Rebuild connection lines
+    const lArr = pLineSegs.geometry.attributes.position.array;
+    const DIST = 160;
+    let li = 0;
+    for (let a = 0; a < N; a++) {
+      for (let b = a + 1; b < N; b++) {
+        const dx = pPos[a*3] - pPos[b*3], dy = pPos[a*3+1] - pPos[b*3+1];
+        if (Math.sqrt(dx*dx + dy*dy) < DIST && li + 5 < lArr.length) {
+          lArr[li++] = pPos[a*3]; lArr[li++] = pPos[a*3+1]; lArr[li++] = pPos[a*3+2];
+          lArr[li++] = pPos[b*3]; lArr[li++] = pPos[b*3+1]; lArr[li++] = pPos[b*3+2];
+        }
+      }
+    }
+    for (let r = li; r < lArr.length; r++) lArr[r] = 0;
+    pLineSegs.geometry.setDrawRange(0, li / 3);
+    pLineSegs.geometry.attributes.position.needsUpdate = true;
+
+    pR.render(pScene, pCam);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // 2. SLEEP ORB (Dashboard hero)
+  // ══════════════════════════════════════════════════════════
+  let oR, oScene, oCam, oMesh, oGlow, oRings = [], oDots;
+  let oTarget = new THREE.Color(C.PURPLE);
+  let oRunning = false;
+
+  function initOrb() {
+    const canvas = document.getElementById('orb-canvas');
+    if (!canvas || !window.THREE) return;
+
+    const W = canvas.clientWidth || 320, H = canvas.clientHeight || 320;
+    oR = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    oR.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    oR.setSize(W, H, false);
+
+    oScene = new THREE.Scene();
+    oCam   = new THREE.PerspectiveCamera(45, W / H, .1, 100);
+    oCam.position.z = 3.5;
+
+    // Lights
+    oScene.add(new THREE.AmbientLight(0x1a0a44, 4));
+    const l1 = new THREE.PointLight(C.VIOLET, 4, 12); l1.position.set(2, 2, 2); oScene.add(l1);
+    const l2 = new THREE.PointLight(C.TEAL,   2, 8);  l2.position.set(-2,-1, 1); oScene.add(l2);
+
+    // Main sphere
+    const sGeo = new THREE.SphereGeometry(.85, 64, 64);
+    const sMat = new THREE.MeshPhongMaterial({
+      color: C.PURPLE, emissive: 0x3520aa,
+      shininess: 100, transparent: true, opacity: .95
+    });
+    oMesh = new THREE.Mesh(sGeo, sMat);
+    oScene.add(oMesh);
+
+    // Outer glow shell
+    const gMat = new THREE.MeshPhongMaterial({
+      color: C.PURPLE, emissive: 0x5540dd,
+      transparent: true, opacity: .14, side: THREE.BackSide
+    });
+    oGlow = new THREE.Mesh(new THREE.SphereGeometry(1.12, 32, 32), gMat);
+    oScene.add(oGlow);
+
+    // Three orbital rings (deep / REM / light)
+    [
+      { r: 1.28, t: .012, tilt: [Math.PI/4,  0, .3], col: C.PURPLE },
+      { r: 1.60, t: .009, tilt: [Math.PI/3, .5, 0],  col: C.TEAL   },
+      { r: 1.90, t: .007, tilt: [Math.PI/6,  0, .8], col: C.VIOLET },
+    ].forEach(({ r, t, tilt, col }) => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(r, t, 8, 100),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .55 })
+      );
+      ring.rotation.set(...tilt);
+      oScene.add(ring);
+      oRings.push(ring);
+    });
+
+    // Floating dots around orb
+    const dPos = [];
+    for (let i = 0; i < 80; i++) {
+      const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+      const rr = .95 + Math.random() * .55;
+      dPos.push(rr * Math.sin(ph) * Math.cos(th), rr * Math.sin(ph) * Math.sin(th), rr * Math.cos(ph));
+    }
+    const dGeo = new THREE.BufferGeometry();
+    dGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dPos), 3));
+    oDots = new THREE.Points(dGeo, new THREE.PointsMaterial({ color: C.VIOLET, size: .04, transparent: true, opacity: .55 }));
+    oScene.add(oDots);
+
+    window.addEventListener('resize', _resizeOrb);
+    oRunning = true;
+    _tickOrb();
+  }
+
+  function _resizeOrb() {
+    if (!oR) return;
+    const c = oR.domElement;
+    const W = c.clientWidth, H = c.clientHeight;
+    oCam.aspect = W / H; oCam.updateProjectionMatrix();
+    oR.setSize(W, H, false);
+  }
+
+  function _tickOrb() {
+    if (!oRunning) return;
+    requestAnimationFrame(_tickOrb);
+    const t = Date.now() * .001;
+
+    if (oMesh) {
+      oMesh.rotation.y = t * .28;
+      oMesh.rotation.x = Math.sin(t * .18) * .09;
+      const pulse = 1 + Math.sin(t * 1.6) * .016;
+      oMesh.scale.setScalar(pulse);
+      oMesh.material.color.lerp(oTarget, .025);
+      oMesh.material.emissive.copy(oMesh.material.color).multiplyScalar(.38);
+    }
+    if (oGlow) {
+      oGlow.material.color.copy(oMesh.material.color);
+      oGlow.material.emissive.copy(oMesh.material.color).multiplyScalar(.6);
+    }
+    oRings.forEach((ring, i) => {
+      ring.rotation.y = t * (.38 + i * .16);
+      ring.rotation.z = t * (.08 + i * .06);
+    });
+    if (oDots) oDots.rotation.y = -t * .12;
+
+    oR.render(oScene, oCam);
+  }
+
+  function updateOrb(qualityScore) {
+    if (!oMesh) return;
+    if      (qualityScore >= 85) oTarget.setHex(C.SUCCESS);
+    else if (qualityScore >= 70) oTarget.setHex(C.PURPLE);
+    else if (qualityScore >= 55) oTarget.setHex(C.WARN);
+    else                         oTarget.setHex(C.DANGER);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // 3. IMU ORIENTATION CUBE (Monitor section)
+  // ══════════════════════════════════════════════════════════
+  let cR, cScene, cCam, cCube;
+  let cTarget = { x: 0, y: 0, z: 0 };
+  let cRunning = false;
+
+  function initCube() {
+    const canvas = document.getElementById('cube-canvas');
+    if (!canvas || !window.THREE) return;
+
+    const W = canvas.clientWidth || 280, H = canvas.clientHeight || 280;
+    cR = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    cR.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    cR.setSize(W, H, false);
+
+    cScene = new THREE.Scene();
+    cCam   = new THREE.PerspectiveCamera(50, W / H, .1, 100);
+    cCam.position.set(2.2, 1.6, 2.8);
+    cCam.lookAt(0, 0, 0);
+
+    // Lights
+    cScene.add(new THREE.AmbientLight(0x223355, 5));
+    const pl = new THREE.PointLight(C.VIOLET, 3, 12); pl.position.set(3, 3, 3); cScene.add(pl);
+    const pl2 = new THREE.PointLight(C.TEAL, 1.5, 8); pl2.position.set(-2, -2, 1); cScene.add(pl2);
+
+    // Pillow-shaped box (wide, flat, elongated)
+    const boxGeo = new THREE.BoxGeometry(1.4, .55, 1.9);
+    const mats = [
+      new THREE.MeshPhongMaterial({ color: 0x5a4fd6, transparent: true, opacity: .28 }),
+      new THREE.MeshPhongMaterial({ color: 0x5a4fd6, transparent: true, opacity: .28 }),
+      new THREE.MeshPhongMaterial({ color: 0x4a3fc6, transparent: true, opacity: .28 }),
+      new THREE.MeshPhongMaterial({ color: 0x4a3fc6, transparent: true, opacity: .28 }),
+      new THREE.MeshPhongMaterial({ color: 0x22D3EE, transparent: true, opacity: .32 }),
+      new THREE.MeshPhongMaterial({ color: 0x22D3EE, transparent: true, opacity: .32 }),
+    ];
+    cCube = new THREE.Mesh(boxGeo, mats);
+    cScene.add(cCube);
+
+    // Edges wireframe
+    cCube.add(new THREE.LineSegments(
+      new THREE.EdgesGeometry(boxGeo),
+      new THREE.LineBasicMaterial({ color: 0x9D8FFF, transparent: true, opacity: .9 })
+    ));
+
+    // Sensor dot on top face
+    const dotMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(.07, 16, 16),
+      new THREE.MeshPhongMaterial({ color: C.TEAL, emissive: C.TEAL, emissiveIntensity: .6 })
+    );
+    dotMesh.position.set(0, .32, 0);
+    cCube.add(dotMesh);
+
+    // World axes (X=red, Y=green, Z=blue)
+    [[1,0,0,0xFF3333],[0,1,0,0x33FF88],[0,0,1,0x33AAFF]].forEach(([x,y,z,col]) => {
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0,0,0), new THREE.Vector3(x*1.3, y*1.3, z*1.3)
+      ]);
+      cScene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: .6 })));
+    });
+
+    // Ground grid
+    const grid = new THREE.GridHelper(5, 10, 0x2a2060, 0x1e1844);
+    grid.position.y = -.85;
+    cScene.add(grid);
+
+    window.addEventListener('resize', _resizeCube);
+    cRunning = true;
+    _tickCube();
+  }
+
+  function _resizeCube() {
+    if (!cR) return;
+    const c = cR.domElement;
+    const W = c.clientWidth, H = c.clientHeight;
+    cCam.aspect = W / H; cCam.updateProjectionMatrix();
+    cR.setSize(W, H, false);
+  }
+
+  function _tickCube() {
+    if (!cRunning) return;
+    requestAnimationFrame(_tickCube);
+    if (cCube) {
+      cCube.rotation.x += (cTarget.x - cCube.rotation.x) * .08;
+      cCube.rotation.y += (cTarget.y - cCube.rotation.y) * .08;
+      cCube.rotation.z += (cTarget.z - cCube.rotation.z) * .08;
+    }
+    cR.render(cScene, cCam);
+  }
+
+  function updateCube(ax, ay, az) {
+    if (!cCube) return;
+    cTarget.x = Math.atan2(ay, Math.sqrt(ax * ax + az * az));
+    cTarget.z = Math.atan2(-ax, az);
+    cTarget.y += .003; // gentle slow auto-spin on Y
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Init all
+  // ══════════════════════════════════════════════════════════
+  function init() {
+    if (!window.THREE) { console.warn('[ZLEEP] Three.js not loaded'); return; }
+    initParticles();
+    // Small delay to ensure canvases are rendered and sized
+    setTimeout(() => { initOrb(); initCube(); }, 200);
+  }
+
+  return { init, updateOrb, updateCube };
+
+})();

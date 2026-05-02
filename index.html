@@ -13,8 +13,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.min.js"></script>
 </head>
 <body>
+<canvas id="particle-canvas"></canvas>
 
 <!-- Background blobs (pseudo-elements handle 2, these are the other 2) -->
 <div class="blob-3"></div>
@@ -301,6 +303,20 @@
         </button>
       </div>
 
+      <!-- Orb Hero + Quality Overview -->
+      <div class="orb-hero">
+        <div class="orb-info">
+          <div class="orb-greeting" id="orb-greeting">Selamat datang di ZLEEP</div>
+          <div class="orb-quality-num" id="orb-quality-num">—</div>
+          <div class="orb-meta">
+            <span class="metric-badge" id="orb-quality-label">Kualitas Tidur</span>
+            <span class="metric-badge badge-info" id="orb-zcs-badge">ZCS: menghitung…</span>
+          </div>
+          <p class="orb-desc">Monitor real-time kualitas tidur &amp; deteksi dini risiko kardiovaskular berbasis IMU smart pillow.</p>
+        </div>
+        <canvas id="orb-canvas"></canvas>
+      </div>
+
       <div class="metrics-grid">
         <div class="metric-card">
           <div class="metric-header">
@@ -380,6 +396,16 @@
           <div class="metric-badge" id="bio-age-badge">Butuh ≥3 sesi</div>
         </div>
 
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">ZLEEP-CVD Score</span>
+            <svg class="metric-icon danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="metric-value" id="zcs-val">—</div>
+          <div class="metric-badge" id="zcs-badge">Menghitung...</div>
+          <div class="metric-progress"><div class="progress-bar" id="zcs-bar" style="width:0%"></div></div>
+        </div>
+
         <div class="metric-card wide">
           <div class="metric-header">
             <span class="metric-label">Ritme Sirkadian</span>
@@ -442,6 +468,20 @@
         <div class="raw-card"><span class="raw-label">gX</span><span id="raw-gx" class="raw-value">0.00</span></div>
         <div class="raw-card"><span class="raw-label">gY</span><span id="raw-gy" class="raw-value">0.00</span></div>
         <div class="raw-card"><span class="raw-label">gZ</span><span id="raw-gz" class="raw-value">0.00</span></div>
+      </div>
+
+      <!-- IMU 3D Orientation Cube -->
+      <div class="chart-card cube-card">
+        <div class="cube-info">
+          <div class="chart-header" style="margin-bottom:8px"><span>Orientasi Bantal — 3D IMU</span></div>
+          <p class="cube-desc">Visualisasi posisi bantal secara real-time berdasarkan data akselerometer. Rotasi dihitung dari sumbu IMU menggunakan atan2.</p>
+          <div class="raw-data-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px">
+            <div class="raw-card"><span class="raw-label">Pitch</span><span id="imu-pitch" class="raw-value">0°</span></div>
+            <div class="raw-card"><span class="raw-label">Roll</span><span id="imu-roll" class="raw-value">0°</span></div>
+            <div class="raw-card"><span class="raw-label">Posisi</span><span id="imu-pos-3d" class="raw-value">—</span></div>
+          </div>
+        </div>
+        <canvas id="cube-canvas"></canvas>
       </div>
     </section>
 
@@ -514,6 +554,39 @@
             <p class="bio-note">Deteksi apnea proxy dari pola gerakan IMU. Bukan pengganti PSG klinis.</p>
           </div>
         </div>
+      </div>
+
+      <!-- ZCS Breakdown -->
+      <div class="analysis-detail-card">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          ZLEEP-CVD Score (ZCS)
+        </h3>
+        <div class="zcs-score-big">
+          <span class="zcs-score-num" id="zcs-detail-num">—</span>
+          <div>
+            <div class="zcs-score-label" id="zcs-detail-label">—</div>
+            <div style="font-size:11px;color:var(--muted)" id="zcs-detail-risk">Risiko 10 tahun: —</div>
+          </div>
+        </div>
+        <div class="zcs-bars">
+          <div class="zcs-bar-row">
+            <span class="zcs-bar-label">Profil (A)</span>
+            <div class="zcs-bar-track"><div class="zcs-bar-fill" id="zcs-bar-a" style="width:0%;background:var(--primary)"></div></div>
+            <span class="zcs-bar-val" id="zcs-val-a">—</span>
+          </div>
+          <div class="zcs-bar-row">
+            <span class="zcs-bar-label">Tidur IMU (B)</span>
+            <div class="zcs-bar-track"><div class="zcs-bar-fill" id="zcs-bar-b" style="width:0%;background:var(--teal)"></div></div>
+            <span class="zcs-bar-val" id="zcs-val-b">—</span>
+          </div>
+          <div class="zcs-bar-row">
+            <span class="zcs-bar-label">Gaya Hidup (C)</span>
+            <div class="zcs-bar-track"><div class="zcs-bar-fill" id="zcs-bar-c" style="width:0%;background:var(--success)"></div></div>
+            <span class="zcs-bar-val" id="zcs-val-c">—</span>
+          </div>
+        </div>
+        <p class="bio-note">ZCS mengintegrasikan data IMU real-time dengan faktor risiko klinis. Tidak menggantikan evaluasi medis. Ref: Framingham, SCORE2, SLR ZLEEP 2024.</p>
       </div>
     </section>
 
@@ -664,6 +737,7 @@
 <script src="js/sleep.js"></script>
 <script src="js/recommendations.js"></script>
 <script src="js/pdf-export.js"></script>
+<script src="js/threejs-scene.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
