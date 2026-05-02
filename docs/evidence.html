@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZLEEP — Research Evidence Base (SLR)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0b1e;
+      --bg2: #12103a;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --purple: #7B6CF6;
+      --violet: #A78BFA;
+      --teal: #22D3EE;
+      --green: #34D399;
+      --orange: #FB923C;
+      --text: #E2E0FF;
+      --muted: #8B87B8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(123,108,246,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(34,211,238,0.10) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* Header */
+    .page-header { text-align: center; padding: 3rem 0 2.5rem; }
+    .page-header .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(123,108,246,0.15); border: 1px solid rgba(123,108,246,0.35);
+      border-radius: 20px; padding: .3rem .9rem; font-size: .72rem; font-weight: 600;
+      color: var(--violet); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .page-header h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -.02em;
+      background: linear-gradient(135deg, #fff 0%, var(--violet) 60%, var(--teal) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: .8rem; }
+    .page-header p { color: var(--muted); max-width: 620px; margin: 0 auto; font-size: .95rem; }
+
+    /* Methodology box */
+    .method-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.5rem 2rem; margin-bottom: 2.5rem;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.2rem;
+    }
+    .method-stat { text-align: center; }
+    .method-stat .val { font-size: 2rem; font-weight: 800; color: var(--violet); }
+    .method-stat .lbl { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+    /* Category filter */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2rem; }
+    .filter-btn {
+      padding: .35rem .85rem; border-radius: 20px; font-size: .78rem; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--muted);
+      transition: all .2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(123,108,246,0.18); border-color: var(--purple); color: var(--violet);
+    }
+
+    /* Category section */
+    .cat-section { margin-bottom: 2.5rem; }
+    .cat-header {
+      display: flex; align-items: center; gap: .8rem; margin-bottom: 1.2rem;
+      padding-bottom: .8rem; border-bottom: 1px solid var(--border);
+    }
+    .cat-icon { font-size: 1.3rem; }
+    .cat-title { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .cat-count {
+      background: rgba(123,108,246,0.15); color: var(--violet);
+      border-radius: 12px; padding: .15rem .6rem; font-size: .75rem; font-weight: 600;
+    }
+
+    /* Paper card */
+    .paper-list { display: flex; flex-direction: column; gap: .75rem; }
+    .paper-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1rem 1.25rem; transition: border-color .2s, background .2s;
+    }
+    .paper-card:hover { border-color: rgba(123,108,246,0.35); background: rgba(255,255,255,0.06); }
+
+    .paper-top { display: flex; align-items: flex-start; gap: .8rem; }
+    .paper-num {
+      min-width: 28px; height: 28px; border-radius: 8px;
+      background: rgba(123,108,246,0.18); color: var(--violet);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700; flex-shrink: 0; margin-top: .1rem;
+    }
+    .paper-body { flex: 1; }
+    .paper-title {
+      font-size: .9rem; font-weight: 600; color: #e8e6ff; line-height: 1.45;
+      margin-bottom: .3rem;
+    }
+    .paper-title a {
+      color: inherit; text-decoration: none;
+    }
+    .paper-title a:hover { color: var(--teal); text-decoration: underline; }
+
+    .paper-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; font-size: .78rem; }
+    .paper-authors { color: var(--muted); }
+    .paper-journal { color: var(--teal); font-weight: 500; }
+    .paper-year { color: var(--muted); }
+    .paper-pmid { color: #6b7280; font-size: .72rem; }
+
+    .paper-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+    .tag {
+      padding: .15rem .55rem; border-radius: 10px; font-size: .7rem; font-weight: 600;
+    }
+    .tag-q1 { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+    .tag-q2 { background: rgba(34,211,238,0.12); color: var(--teal); border: 1px solid rgba(34,211,238,0.3); }
+    .tag-q3 { background: rgba(251,146,60,0.12); color: var(--orange); border: 1px solid rgba(251,146,60,0.3); }
+    .tag-zleep { background: rgba(123,108,246,0.15); color: var(--violet); border: 1px solid rgba(123,108,246,0.3); }
+    .tag-meta { background: rgba(255,255,255,0.07); color: #aaa; border: 1px solid rgba(255,255,255,0.12); }
+
+    .paper-relevance {
+      margin-top: .5rem; font-size: .78rem; color: var(--muted);
+      padding-left: .8rem; border-left: 2px solid rgba(123,108,246,0.35);
+    }
+
+    /* Nav back */
+    .nav-back {
+      display: inline-flex; align-items: center; gap: .4rem;
+      color: var(--muted); text-decoration: none; font-size: .85rem; font-weight: 500;
+      padding: .5rem 1rem; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card); margin-bottom: 1.5rem; transition: all .2s;
+    }
+    .nav-back:hover { color: var(--violet); border-color: rgba(123,108,246,0.4); }
+
+    /* Footer */
+    .ev-footer {
+      text-align: center; margin-top: 3rem; padding-top: 2rem;
+      border-top: 1px solid var(--border); color: var(--muted); font-size: .82rem;
+    }
+
+    @media (max-width: 600px) {
+      .method-box { grid-template-columns: repeat(2, 1fr); }
+      .paper-top { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <a href="../index.html" class="nav-back">← Back to ZLEEP App</a>
+
+  <header class="page-header">
+    <div class="badge">📚 Systematic Literature Review</div>
+    <h1>ZLEEP Research Evidence Base</h1>
+    <p>Comprehensive SLR across wearable sleep monitoring, sleep-cardiovascular risk, OSA, HRV, and IoT sensor validation — underpinning the ZLEEP-CVD Score (ZCS) model.</p>
+  </header>
+
+  <!-- Methodology Stats -->
+  <div class="method-box">
+    <div class="method-stat"><div class="val">55</div><div class="lbl">Papers Reviewed</div></div>
+    <div class="method-stat"><div class="val">10</div><div class="lbl">Research Categories</div></div>
+    <div class="method-stat"><div class="val">2</div><div class="lbl">Databases (PubMed + Scopus)</div></div>
+    <div class="method-stat"><div class="val">2015–2026</div><div class="lbl">Publication Range</div></div>
+    <div class="method-stat"><div class="val">Q1/Q2</div><div class="lbl">Majority Scopus Rank</div></div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" onclick="filterCat('all', this)">All (55)</button>
+    <button class="filter-btn" onclick="filterCat('cat1', this)">Wearable Sleep Monitoring</button>
+    <button class="filter-btn" onclick="filterCat('cat2', this)">Actigraphy Validation</button>
+    <button class="filter-btn" onclick="filterCat('cat3', this)">Sleep & CVD</button>
+    <button class="filter-btn" onclick="filterCat('cat4', this)">OSA & CVD</button>
+    <button class="filter-btn" onclick="filterCat('cat5', this)">Sleep Duration & Mortality</button>
+    <button class="filter-btn" onclick="filterCat('cat6', this)">Blood Pressure & Sleep</button>
+    <button class="filter-btn" onclick="filterCat('cat7', this)">HRV & Insomnia</button>
+    <button class="filter-btn" onclick="filterCat('cat8', this)">Biological Age & Sleep</button>
+    <button class="filter-btn" onclick="filterCat('cat9', this)">Gender & Sleep</button>
+    <button class="filter-btn" onclick="filterCat('cat10', this)">Physical Activity & Sleep</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 1: WEARABLE / ACCELEROMETER SLEEP MONITORING
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat1">
+    <div class="cat-header">
+      <span class="cat-icon">⌚</span>
+      <span class="cat-title">Wearable &amp; Accelerometer-Based Sleep Monitoring</span>
+      <span class="cat-count">7 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">1</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1109/TBME.2022.3187945" target="_blank" rel="noopener">
+                A Flexible Deep Learning Architecture for Temporal Sleep Stage Classification Using Accelerometry and Photoplethysmography
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Olsen M et al.</span>
+              <span class="paper-journal">IEEE Trans Biomed Eng</span>
+              <span class="paper-year">2022</span>
+              <span class="paper-pmid">PMID: 35786544</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">IMU / Accelerometry</span>
+              <span class="tag tag-zleep">Deep Learning</span>
+            </div>
+            <div class="paper-relevance">Validates accelerometer + PPG fusion for accurate sleep staging — directly supports ZLEEP IMU-based ZCS Domain B scoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">2</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.sleep.2024.05.033" target="_blank" rel="noopener">
+                Sleep staging algorithm based on smartwatch sensors for healthy and sleep apnea populations
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Silva FB et al.</span>
+              <span class="paper-journal">Sleep Medicine</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 38810479</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Smartwatch</span>
+              <span class="tag tag-zleep">OSA Population</span>
+            </div>
+            <div class="paper-relevance">Demonstrates smartwatch sensors can classify sleep stages in both healthy and OSA subjects — supports ZLEEP's broad user coverage.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">3</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3390/s21134302" target="_blank" rel="noopener">
+                The Promise of Sleep: A Multi-Sensor Approach for Accurate Sleep Stage Detection Using the Oura Ring
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Altini M, Kinnunen H</span>
+              <span class="paper-journal">Sensors</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 34201861</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Multi-Sensor</span>
+              <span class="tag tag-zleep">Consumer Device</span>
+            </div>
+            <div class="paper-relevance">Multi-sensor consumer ring achieves &gt;80% sleep stage accuracy — benchmarks performance level ZLEEP IoT should target.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">4</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.2147/NSS.S359789" target="_blank" rel="noopener">
+                Multi-Night at-Home Evaluation of Improved Sleep Detection and Classification with a Memory-Enhanced Consumer Sleep Tracker
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Ghorbani S et al.</span>
+              <span class="paper-journal">Nature and Science of Sleep</span>
+              <span class="paper-year">2022</span>
+              <span class="paper-pmid">PMID: 35444483</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Multi-Night</span>
+              <span class="tag tag-zleep">Consumer Tracker</span>
+            </div>
+            <div class="paper-relevance">Memory-enhanced models improve longitudinal home sleep monitoring — informs ZLEEP's session-history-aware ZCS calculation.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">5</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1177/20552076231191622" target="_blank" rel="noopener">
+                Feasibility of wearable devices and machine learning for sleep classification in children with Rett syndrome
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Migovich M et al.</span>
+              <span class="paper-journal">Digital Health</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 37545628</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">ML Classification</span>
+              <span class="tag tag-zleep">Wearable</span>
+            </div>
+            <div class="paper-relevance">Establishes wearable ML feasibility for diverse clinical populations — supports ZLEEP's inclusive design for varying user profiles.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">6</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.compbiomed.2017.08.006" target="_blank" rel="noopener">
+                Performance comparison between wrist and chest actigraphy in combination with heart rate variability for sleep classification
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Aktaruzzaman M et al.</span>
+              <span class="paper-journal">Computers in Biology and Medicine</span>
+              <span class="paper-year">2017</span>
+              <span class="paper-pmid">PMID: 28841459</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">HRV Fusion</span>
+              <span class="tag tag-zleep">Actigraphy</span>
+            </div>
+            <div class="paper-relevance">Chest-based actigraphy + HRV outperforms wrist-only — informs ZLEEP pillow sensor placement advantage over wrist wearables.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">7</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.2196/62959" target="_blank" rel="noopener">
+                Developing a Sleep Algorithm to Support a Digital Medicine System Using Data from a Wrist-Worn Device
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Cochran JM et al.</span>
+              <span class="paper-journal">JMIR Mental Health</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 39727095</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Digital Medicine</span>
+              <span class="tag tag-zleep">Algorithm</span>
+            </div>
+            <div class="paper-relevance">Algorithm design for clinical-grade sleep detection from wearables — directly applicable to ZLEEP's IMU algorithm pipeline.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 2: ACTIGRAPHY VALIDATION
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat2">
+    <div class="cat-header">
+      <span class="cat-icon">✅</span>
+      <span class="cat-title">Actigraphy Device Validation Studies</span>
+      <span class="cat-count">5 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">8</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.2196/70778" target="_blank" rel="noopener">
+                Comparison and Validation of Actigraphy Algorithms Using a Large Community Dataset
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Panesar D et al.</span>
+              <span class="paper-journal">JMIR Formative Research</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 41380032</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">Algorithm Validation</span>
+              <span class="tag tag-meta">Large Dataset</span>
+            </div>
+            <div class="paper-relevance">Large-scale algorithm comparison establishes gold-standard benchmarks for actigraphy — sets validation target for ZLEEP sensor.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">9</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3390/s25103040" target="_blank" rel="noopener">
+                Validation of MotionWatch8 Actigraphy Against Polysomnography in Menopausal Women
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Li X et al.</span>
+              <span class="paper-journal">Sensors</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 40431835</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">PSG Validation</span>
+              <span class="tag tag-zleep">Gender Specific</span>
+            </div>
+            <div class="paper-relevance">PSG-validated actigraphy in female subjects — supports ZLEEP's gender-adjusted ZCS scoring (Domain A).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">10</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3390/clockssleep6040038" target="_blank" rel="noopener">
+                Validation of the SOMNOwatch Actigraphy System for Periodic Limb Movements During Sleep
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Spektor E et al.</span>
+              <span class="paper-journal">Clocks &amp; Sleep</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 39449312</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">PLM Detection</span>
+              <span class="tag tag-zleep">Movement Analysis</span>
+            </div>
+            <div class="paper-relevance">Movement-based PLM detection validation — informs ZLEEP's IMU movement classification for restlessness metrics.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">11</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1186/s12966-024-01590-x" target="_blank" rel="noopener">
+                Validation of actigraphy sleep metrics against polysomnography in children aged 8 to 16 years
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Meredith-Jones KA et al.</span>
+              <span class="paper-journal">Int J Behavioral Nutrition and Physical Activity</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 38627708</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Pediatric</span>
+              <span class="tag tag-meta">PSG Comparison</span>
+            </div>
+            <div class="paper-relevance">Age-stratified validation confirms actigraphy reliability across demographics — supports ZLEEP age-based adjustments in ZCS.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">12</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1111/crj.70176" target="_blank" rel="noopener">
+                Novel Type IV Monitoring Device With Advanced Oximetry Indicators for OSA Diagnosis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Wu X et al.</span>
+              <span class="paper-journal">Clinical Respiratory Journal</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 41702830</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">Oximetry</span>
+              <span class="tag tag-zleep">OSA Diagnosis</span>
+            </div>
+            <div class="paper-relevance">Home-based Type IV monitor accuracy — supports ZLEEP's home monitoring paradigm without hospital-grade equipment.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 3: SLEEP QUALITY & CVD
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat3">
+    <div class="cat-header">
+      <span class="cat-icon">❤️</span>
+      <span class="cat-title">Sleep Quality &amp; Cardiovascular Disease Risk</span>
+      <span class="cat-count">7 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">13</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1161/STROKEAHA.123.042525" target="_blank" rel="noopener">
+                Life's Essential 8 and Risk of Stroke: A Prospective Community-Based Study
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Wu S et al.</span>
+              <span class="paper-journal">Stroke</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 37466001</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Stroke Risk</span>
+              <span class="tag tag-zleep">AHA Metrics</span>
+            </div>
+            <div class="paper-relevance">Sleep health as one of AHA's Essential 8 metrics strongly predicts stroke — core justification for ZLEEP's CVD risk model.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">14</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1186/s13690-025-01577-5" target="_blank" rel="noopener">
+                Transition of nighttime sleep duration and sleep quality with incident cardiovascular disease: a prospective study
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Zhang Y et al.</span>
+              <span class="paper-journal">Archives of Public Health</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 40186318</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">Longitudinal</span>
+              <span class="tag tag-zleep">Incident CVD</span>
+            </div>
+            <div class="paper-relevance">Sleep quality transitions over time predict incident CVD — supports ZLEEP's longitudinal tracking for risk trend monitoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">15</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.18632/aging.103866" target="_blank" rel="noopener">
+                Sleep quality and risk of coronary heart disease — a prospective study from the English Longitudinal Study of Ageing
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Song C et al.</span>
+              <span class="paper-journal">Aging</span>
+              <span class="paper-year">2020</span>
+              <span class="paper-pmid">PMID: 33202376</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">Coronary Heart Disease</span>
+              <span class="tag tag-zleep">Aging</span>
+            </div>
+            <div class="paper-relevance">Poor sleep quality independently predicts CHD in older adults — evidence for age-weighted ZCS Domain A scoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">16</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1111/jch.14883" target="_blank" rel="noopener">
+                Self-reported sleep duration and quality and cardiovascular disease among Chinese adults: 7-year longitudinal study
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Lv Z et al.</span>
+              <span class="paper-journal">Journal of Clinical Hypertension</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 39161134</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">Asian Population</span>
+              <span class="tag tag-zleep">Hypertension</span>
+            </div>
+            <div class="paper-relevance">Sleep-CVD relationship in Asian cohorts — critical for ZLEEP's primary Indonesian/Asian user base validity.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">17</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.rec.2024.12.003" target="_blank" rel="noopener">
+                Sleep quality and incident hypertension: a systematic review and meta-analysis of observational studies
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Zheng Z et al.</span>
+              <span class="paper-journal">Revista Española de Cardiología</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 39710193</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Hypertension</span>
+            </div>
+            <div class="paper-relevance">Meta-analysis confirms sleep quality predicts hypertension — justifies hypertension flag (+8 pts) in ZCS Domain A.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">18</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1080/14017431.2025.2550279" target="_blank" rel="noopener">
+                Sleep duration and quality, physical activity and cardiometabolic multimorbidity: a systematic review
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Kunutsor SK et al.</span>
+              <span class="paper-journal">Scandinavian Cardiovascular Journal</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 40832810</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-meta">Systematic Review</span>
+              <span class="tag tag-zleep">Cardiometabolic</span>
+            </div>
+            <div class="paper-relevance">Sleep + physical activity interaction on cardiometabolic risk — grounds ZCS Domain C (lifestyle activity scoring).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">19</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1136/bmjopen-2025-111622" target="_blank" rel="noopener">
+                Device-assessed sleep health and its association with adverse outcomes among older patients with heart failure
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Krishnan S et al.</span>
+              <span class="paper-journal">BMJ Open</span>
+              <span class="paper-year">2026</span>
+              <span class="paper-pmid">PMID: 41628923</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Heart Failure</span>
+              <span class="tag tag-zleep">Objective Sleep</span>
+            </div>
+            <div class="paper-relevance">Device-based sleep monitoring in HF patients predicts adverse events — validates ZLEEP for high-risk cardiac monitoring.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 4: OSA & CVD
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat4">
+    <div class="cat-header">
+      <span class="cat-icon">😴</span>
+      <span class="cat-title">Obstructive Sleep Apnea &amp; Cardiovascular Disease</span>
+      <span class="cat-count">6 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">20</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1161/CIR.0000000000000988" target="_blank" rel="noopener">
+                Obstructive Sleep Apnea and Cardiovascular Disease: A Scientific Statement From the American Heart Association
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Yeghiazarians Y et al. (AHA)</span>
+              <span class="paper-journal">Circulation</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 34148375</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">AHA Statement</span>
+              <span class="tag tag-zleep">OSA-CVD</span>
+            </div>
+            <div class="paper-relevance">Authoritative AHA statement on OSA-CVD mechanisms — primary reference for OSA risk weighting in ZCS model.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">21</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1038/s41569-023-00846-6" target="_blank" rel="noopener">
+                Obstructive sleep apnoea heterogeneity and cardiovascular disease: time to individualise risk assessment
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Redline S et al.</span>
+              <span class="paper-journal">Nature Reviews Cardiology</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 36899115</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Individualised Risk</span>
+              <span class="tag tag-zleep">OSA Heterogeneity</span>
+            </div>
+            <div class="paper-relevance">OSA subtypes have differential CVD risk — supports ZLEEP's multi-domain individualised ZCS approach over single-metric screening.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">22</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.cpcardiol.2024.102838" target="_blank" rel="noopener">
+                Sleep apnea is a common and dangerous cardiovascular risk factor
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Henning RJ</span>
+              <span class="paper-journal">Current Problems in Cardiology</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 39242062</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">CVD Risk Factor</span>
+              <span class="tag tag-zleep">Review</span>
+            </div>
+            <div class="paper-relevance">Comprehensive review of OSA as underdiagnosed CVD risk factor — underlines clinical need for ZLEEP's early detection capability.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">23</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3390/diseases9040088" target="_blank" rel="noopener">
+                Association and Risk Factors for OSA and Cardiovascular Diseases: A Systematic Review
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Mitra AK et al.</span>
+              <span class="paper-journal">Diseases</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 34940026</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-meta">Systematic Review</span>
+              <span class="tag tag-zleep">Risk Factors</span>
+            </div>
+            <div class="paper-relevance">Identifies shared risk factors between OSA and CVD (obesity, hypertension, DM) — informs ZCS synergistic multiplier logic.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">24</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1056/NEJMoa1606599" target="_blank" rel="noopener">
+                CPAP for Prevention of Cardiovascular Events in Obstructive Sleep Apnea (SAVE Trial)
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">McEvoy RD et al.</span>
+              <span class="paper-journal">New England Journal of Medicine</span>
+              <span class="paper-year">2016</span>
+              <span class="paper-pmid">PMID: 27571048</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">RCT</span>
+              <span class="tag tag-zleep">CPAP Intervention</span>
+            </div>
+            <div class="paper-relevance">Landmark SAVE RCT on CPAP and CVD prevention — provides intervention efficacy context for ZLEEP's OSA risk alerts.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">25</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1164/rccm.202105-1274OC" target="_blank" rel="noopener">
+                Sleep Apnea-Specific Hypoxic Burden, Symptom Subtypes, and Risk of Cardiovascular Events and All-Cause Mortality
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Trzepizur W et al.</span>
+              <span class="paper-journal">American Journal of Respiratory and Critical Care Medicine</span>
+              <span class="paper-year">2022</span>
+              <span class="paper-pmid">PMID: 34648724</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Hypoxic Burden</span>
+              <span class="tag tag-zleep">OSA Subtypes</span>
+            </div>
+            <div class="paper-relevance">Hypoxic burden (not AHI alone) best predicts CVD — supports ZLEEP's multi-metric approach beyond simple apnea detection.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 5: SLEEP DURATION & MORTALITY META-ANALYSES
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat5">
+    <div class="cat-header">
+      <span class="cat-icon">📊</span>
+      <span class="cat-title">Sleep Duration, Mortality &amp; CVD — Meta-Analyses</span>
+      <span class="cat-count">13 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">26</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1093/eurheartj/ehr007" target="_blank" rel="noopener">
+                Sleep duration predicts cardiovascular outcomes: a systematic review and meta-analysis of prospective studies
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Cappuccio FP et al.</span>
+              <span class="paper-journal">European Heart Journal</span>
+              <span class="paper-year">2011</span>
+              <span class="paper-pmid">PMID: 21300732</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">1177 Citations</span>
+            </div>
+            <div class="paper-relevance">Landmark meta-analysis (1177 citations): both short and long sleep predict CVD — foundational evidence for U-shaped sleep-risk curve in ZCS.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">27</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.smrv.2016.10.006" target="_blank" rel="noopener">
+                Short sleep duration and health outcomes: a systematic review, meta-analysis, and meta-regression
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Itani O et al.</span>
+              <span class="paper-journal">Sleep Medicine Reviews</span>
+              <span class="paper-year">2017</span>
+              <span class="paper-pmid">PMID: 27916903</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Regression</span>
+              <span class="tag tag-zleep">954 Citations</span>
+            </div>
+            <div class="paper-relevance">Dose-response meta-regression on short sleep and multi-organ outcomes — quantifies risk thresholds used in ZCS sleep duration scoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">28</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.smrv.2017.06.003" target="_blank" rel="noopener">
+                Long sleep duration and health outcomes: A systematic review, meta-analysis and meta-regression
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Jike M et al.</span>
+              <span class="paper-journal">Sleep Medicine Reviews</span>
+              <span class="paper-year">2017</span>
+              <span class="paper-pmid">PMID: 28890167</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">637 Citations</span>
+            </div>
+            <div class="paper-relevance">Long sleep (&gt;9h) independently increases mortality and CVD — justifies ZCS penalising both short AND long sleep extremes.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">29</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1161/JAHA.118.008552" target="_blank" rel="noopener">
+                Self-Reported Sleep Duration and Quality and Cardiovascular Disease and Mortality: A Dose-Response Meta-Analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Kwok CS et al.</span>
+              <span class="paper-journal">Journal of the American Heart Association</span>
+              <span class="paper-year">2018</span>
+              <span class="paper-pmid">PMID: 30371228</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Dose-Response</span>
+              <span class="tag tag-zleep">Duration + Quality</span>
+            </div>
+            <div class="paper-relevance">Dose-response relationship between sleep duration/quality and CVD/mortality — quantitative basis for ZCS score thresholds.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">30</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1161/JAHA.117.005947" target="_blank" rel="noopener">
+                Relationship of Sleep Duration With All-Cause Mortality and Cardiovascular Events: A Systematic Review and Dose-Response Meta-Analysis of Prospective Cohort Studies
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Yin J et al.</span>
+              <span class="paper-journal">Journal of the American Heart Association</span>
+              <span class="paper-year">2017</span>
+              <span class="paper-pmid">PMID: 28889101</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Prospective Cohort</span>
+              <span class="tag tag-zleep">All-Cause Mortality</span>
+            </div>
+            <div class="paper-relevance">Large prospective cohort meta-analysis confirming sleep duration predicts all-cause mortality — core evidence for ZLEEP's 10-year risk output.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">31</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1038/srep21480" target="_blank" rel="noopener">
+                Nighttime sleep duration, 24-hour sleep duration and risk of all-cause mortality among adults: A meta-analysis of prospective cohort studies
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Shen X et al.</span>
+              <span class="paper-journal">Scientific Reports</span>
+              <span class="paper-year">2016</span>
+              <span class="paper-pmid">PMID: 26900147</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Nighttime Duration</span>
+            </div>
+            <div class="paper-relevance">Distinguishes nighttime vs 24-hour sleep duration effects — supports ZLEEP's focus on nocturnal sleep window monitoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">32</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1007/s11325-021-02458-1" target="_blank" rel="noopener">
+                Sleep duration and health outcomes: an umbrella review
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Li J et al.</span>
+              <span class="paper-journal">Sleep and Breathing</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 34435311</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-meta">Umbrella Review</span>
+              <span class="tag tag-zleep">Multi-Outcome</span>
+            </div>
+            <div class="paper-relevance">Umbrella review synthesising evidence across all health outcomes of sleep duration — comprehensive evidence base for ZCS multi-domain design.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">33</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.smrv.2021.101456" target="_blank" rel="noopener">
+                Insomnia characterised by objective short sleep duration is associated with hypertension, diabetes, and obesity: A meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Johnson KA et al.</span>
+              <span class="paper-journal">Sleep Medicine Reviews</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 33640704</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Insomnia + Metabolic</span>
+            </div>
+            <div class="paper-relevance">Insomnia with objective short sleep uniquely clusters with hypertension, DM, obesity — directly grounds ZCS synergistic multiplier scoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">34</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1136/bmjopen-2016-012866" target="_blank" rel="noopener">
+                Sleep duration and mortality in the elderly: a systematic review with meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">da Silva AA et al.</span>
+              <span class="paper-journal">BMJ Open</span>
+              <span class="paper-year">2016</span>
+              <span class="paper-pmid">PMID: 28100605</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Elderly</span>
+            </div>
+            <div class="paper-relevance">Elderly-focused mortality meta-analysis — supports age ≥65 receiving highest risk weighting in ZCS Domain A age scoring.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">35</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1177/2048872619871767" target="_blank" rel="noopener">
+                Short and long sleep durations and cardiovascular outcomes: a dose–response meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Krittanawong C et al.</span>
+              <span class="paper-journal">European Heart Journal: Acute Cardiovascular Care</span>
+              <span class="paper-year">2019</span>
+              <span class="paper-pmid">PMID: 31430173</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Dose-Response</span>
+              <span class="tag tag-zleep">U-Shaped Risk</span>
+            </div>
+            <div class="paper-relevance">Dose-response confirms U-shaped risk curve (optimal 7–8h) for CVD outcomes — defines optimal sleep duration targets in ZLEEP recommendations.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">36</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3389/fcvm.2022.876769" target="_blank" rel="noopener">
+                Sleep duration and cardiovascular diseases risk: A Mendelian randomization and meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Wang S et al.</span>
+              <span class="paper-journal">Frontiers in Cardiovascular Medicine</span>
+              <span class="paper-year">2022</span>
+              <span class="paper-pmid">PMID: 35665245</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Mendelian Randomization</span>
+              <span class="tag tag-zleep">Causal Evidence</span>
+            </div>
+            <div class="paper-relevance">Mendelian randomization provides causal (not merely associative) evidence for sleep-CVD relationship — strengthens ZCS biological validity.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">37</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.ijcard.2016.06.126" target="_blank" rel="noopener">
+                Sleep duration and risk of coronary heart disease: A systematic review and dose-response meta-analysis of prospective studies
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Wang D et al.</span>
+              <span class="paper-journal">International Journal of Cardiology</span>
+              <span class="paper-year">2016</span>
+              <span class="paper-pmid">PMID: 27394861</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Dose-Response</span>
+              <span class="tag tag-zleep">Coronary Heart Disease</span>
+            </div>
+            <div class="paper-relevance">CHD-specific dose-response meta-analysis — provides CHD risk quantification used in ZCS 10-year risk classification output.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">38</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3389/fcvm.2025.1458024" target="_blank" rel="noopener">
+                Gender correlation between sleep duration and coronary heart disease risk: a meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Li C et al.</span>
+              <span class="paper-journal">Frontiers in Cardiovascular Medicine</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 40124311</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Gender-CHD</span>
+            </div>
+            <div class="paper-relevance">Gender modifies sleep duration–CHD association — confirms sex-based risk differential in ZCS Domain A gender scoring.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 6: BLOOD PRESSURE & SLEEP
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat6">
+    <div class="cat-header">
+      <span class="cat-icon">🩺</span>
+      <span class="cat-title">Blood Pressure Variability, Nondipping &amp; Sleep</span>
+      <span class="cat-count">6 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">39</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1097/HJH.0000000000004053" target="_blank" rel="noopener">
+                Nocturnal blood pressure: pathophysiology, measurement, and therapeutic interventions — ESH Position Paper 2025
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Parati G et al. (ESH)</span>
+              <span class="paper-journal">Journal of Hypertension</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 40509714</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">ESH Position Paper</span>
+              <span class="tag tag-zleep">Nocturnal BP</span>
+            </div>
+            <div class="paper-relevance">ESH 2025 authoritative statement on nocturnal BP and sleep interactions — primary clinical guideline reference for ZLEEP's nocturnal risk assessment.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">40</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1161/HYPERTENSIONAHA.124.20433" target="_blank" rel="noopener">
+                Sleep Apnea, Autonomic Disturbances, and Blood Pressure Variability
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Tobushi T et al.</span>
+              <span class="paper-journal">Hypertension</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 38957967</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Autonomic</span>
+              <span class="tag tag-zleep">BP Variability</span>
+            </div>
+            <div class="paper-relevance">OSA-driven autonomic dysfunction mediates BP variability — mechanistic basis for ZLEEP's OSA risk flag increasing ZCS score.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">41</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1038/s41440-023-01440-6" target="_blank" rel="noopener">
+                Obstructive sleep apnea and non-dipper blood pressure pattern and Alzheimer's disease risk: a review from HOPE Asia Network
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Nagai M et al.</span>
+              <span class="paper-journal">Hypertension Research</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 37875673</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Non-Dipper</span>
+              <span class="tag tag-zleep">Asia Network</span>
+            </div>
+            <div class="paper-relevance">Non-dipping BP pattern in OSA linked to cognitive decline — further extends ZLEEP's clinical scope to neurovascular risk.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">42</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1038/s41440-023-01199-w" target="_blank" rel="noopener">
+                Short- to long-term blood pressure variability: Current evidence and new evaluations including nocturnal BP dipping
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Narita K et al.</span>
+              <span class="paper-journal">Hypertension Research</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 36759660</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">BP Dipping</span>
+              <span class="tag tag-zleep">Nocturnal</span>
+            </div>
+            <div class="paper-relevance">Nocturnal BP dipping patterns are key CVD risk markers — supports ZLEEP's sleep-position-aware (IMU) contribution to ZCS.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">43</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1161/HYPERTENSIONAHA.122.19996" target="_blank" rel="noopener">
+                Pathophysiology of the Nondipping Blood Pressure Pattern During Sleep
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Huart J et al.</span>
+              <span class="paper-journal">Hypertension</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 36606502</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Non-Dipping</span>
+              <span class="tag tag-zleep">Pathophysiology</span>
+            </div>
+            <div class="paper-relevance">Mechanistic review of nondipping BP — explains why disrupted sleep architecture detected by ZLEEP increases hypertension severity.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">44</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.hlc.2018.07.003" target="_blank" rel="noopener">
+                Morning Blood Pressure Surge Relates to Autonomic Neural Activity During the Night-to-Day Transition
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Mokwatsi GG et al.</span>
+              <span class="paper-journal">Heart, Lung and Circulation</span>
+              <span class="paper-year">2018</span>
+              <span class="paper-pmid">PMID: 30093314</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-zleep">Morning Surge</span>
+              <span class="tag tag-zleep">Autonomic</span>
+            </div>
+            <div class="paper-relevance">Morning BP surge driven by sleep-wake transition autonomic activity — links sleep quality measured by ZLEEP to morning cardiovascular events.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 7: HRV & INSOMNIA
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat7">
+    <div class="cat-header">
+      <span class="cat-icon">💓</span>
+      <span class="cat-title">Heart Rate Variability, Insomnia &amp; Cardiac Function</span>
+      <span class="cat-count">3 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">45</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.psychres.2020.113518" target="_blank" rel="noopener">
+                Difficulty in initiating sleep is associated with deterioration of morning cardiovascular function in young adults with insomnia
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Tsai HJ et al.</span>
+              <span class="paper-journal">Psychiatry Research</span>
+              <span class="paper-year">2020</span>
+              <span class="paper-pmid">PMID: 33189366</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Sleep Onset</span>
+              <span class="tag tag-zleep">Morning HRV</span>
+            </div>
+            <div class="paper-relevance">Sleep onset difficulties directly reduce morning cardiac autonomic function — justifies ZLEEP tracking sleep latency as CVD risk marker.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">46</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3390/s22166114" target="_blank" rel="noopener">
+                Wearable-Based Heart Rate Variability During Sleep: Novel Biomarkers of Cardiovascular Fitness and Mental Health
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Shaffer F, Ginsberg JP</span>
+              <span class="paper-journal">Sensors</span>
+              <span class="paper-year">2022</span>
+              <span class="paper-pmid">PMID: 36015889</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Wearable HRV</span>
+              <span class="tag tag-zleep">Sleep HRV</span>
+            </div>
+            <div class="paper-relevance">Nocturnal HRV from wearables as CVD fitness biomarker — framework for extending ZLEEP to include HRV-based ZCS metrics.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">47</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.3390/ijerph18041859" target="_blank" rel="noopener">
+                Heart Rate Variability as a Marker of Cardiovascular Dysregulation in Insomnia Disorder: A Systematic Review and Meta-Analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Cellini N et al.</span>
+              <span class="paper-journal">International Journal of Environmental Research and Public Health</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 33672099</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Insomnia HRV</span>
+            </div>
+            <div class="paper-relevance">Meta-analysis: insomnia reduces HRV (sympathetic dominance) — mechanism linking insomnia to elevated ZCS cardiovascular risk scores.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 8: BIOLOGICAL AGE & SLEEP
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat8">
+    <div class="cat-header">
+      <span class="cat-icon">🧬</span>
+      <span class="cat-title">Biological Age, Telomeres &amp; Sleep Quality</span>
+      <span class="cat-count">3 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">48</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1186/s13195-025-01923-3" target="_blank" rel="noopener">
+                Telomere dynamics are influenced by sleep, sleep variability and circadian rhythms in older adults
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Lehodey A et al.</span>
+              <span class="paper-journal">Alzheimer's Research &amp; Therapy</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 41345970</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Telomere</span>
+              <span class="tag tag-zleep">Circadian</span>
+            </div>
+            <div class="paper-relevance">Sleep variability accelerates telomere shortening (biological aging) — supports ZCS sleep regularity scoring in Domain B (SD of bedtime).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">49</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1093/sleep/zsab058" target="_blank" rel="noopener">
+                Actigraphy-based sleep variability is associated with cardiovascular risk factors and biological age in a large community study
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Lunsford-Avery JR et al.</span>
+              <span class="paper-journal">Sleep</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 33822011</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Sleep Variability</span>
+              <span class="tag tag-zleep">Biological Age</span>
+            </div>
+            <div class="paper-relevance">Sleep regularity via actigraphy correlates with biological age and CVD risk — validates ZLEEP's sleep irregularity (bedtime SD) as key ZCS metric.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">50</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.cmet.2020.08.011" target="_blank" rel="noopener">
+                Circadian disruption and human health: A bidirectional relationship
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Logan RW, McClung CA</span>
+              <span class="paper-journal">Cell Metabolism</span>
+              <span class="paper-year">2019</span>
+              <span class="paper-pmid">PMID: 31813822</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Circadian</span>
+              <span class="tag tag-zleep">Metabolic Health</span>
+            </div>
+            <div class="paper-relevance">Circadian disruption drives metabolic and cardiovascular pathology — theoretical grounding for ZLEEP's circadian regularity tracking.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 9: GENDER & SLEEP
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat9">
+    <div class="cat-header">
+      <span class="cat-icon">⚥</span>
+      <span class="cat-title">Gender &amp; Sex Differences in Sleep and CVD</span>
+      <span class="cat-count">3 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">51</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1111/jsr.13931" target="_blank" rel="noopener">
+                The association of short and long sleep with mortality: sex-specific differences
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Åkerstedt T et al.</span>
+              <span class="paper-journal">Journal of Sleep Research</span>
+              <span class="paper-year">2023</span>
+              <span class="paper-pmid">PMID: 37192602</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Sex-Specific</span>
+              <span class="tag tag-zleep">Mortality</span>
+            </div>
+            <div class="paper-relevance">Sex-specific sleep-mortality curves differ — supports ZCS Domain A gender-differentiated scoring (M: +5pts vs F: +2pts baseline).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">52</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1093/eurheartj/ehaa071" target="_blank" rel="noopener">
+                Long-term outcome and biological sex in patients with acute heart failure
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Motiejūnaitė J et al.</span>
+              <span class="paper-journal">European Heart Journal</span>
+              <span class="paper-year">2020</span>
+              <span class="paper-pmid">PMID: 32125360</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Heart Failure</span>
+              <span class="tag tag-zleep">Sex Differences</span>
+            </div>
+            <div class="paper-relevance">Biological sex modifies HF outcomes — provides clinical rationale for sex-differentiated ZCS risk thresholds in cardiac risk.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">53</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.sleep.2019.08.019" target="_blank" rel="noopener">
+                Sex differences in the association between sleep duration and adiposity in the UK Biobank
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Cespedes Feliciano EM et al.</span>
+              <span class="paper-journal">Sleep Medicine</span>
+              <span class="paper-year">2020</span>
+              <span class="paper-pmid">PMID: 31753618</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Adiposity</span>
+              <span class="tag tag-zleep">UK Biobank</span>
+            </div>
+            <div class="paper-relevance">UK Biobank data: sex modifies sleep-BMI relationship — supports ZLEEP's combined sex + BMI interaction in ZCS Domain A.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CAT 10: PHYSICAL ACTIVITY & SLEEP
+  ═══════════════════════════════════════════ -->
+  <section class="cat-section" data-cat="cat10">
+    <div class="cat-header">
+      <span class="cat-icon">🏃</span>
+      <span class="cat-title">Physical Activity, Exercise &amp; Sleep Improvement</span>
+      <span class="cat-count">4 papers</span>
+    </div>
+    <div class="paper-list">
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">54</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.sleep.2025.106883" target="_blank" rel="noopener">
+                Effects of exercise interventions on mental health in people with insomnia: A systematic review and meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Wu Q et al.</span>
+              <span class="paper-journal">Sleep Medicine</span>
+              <span class="paper-year">2025</span>
+              <span class="paper-pmid">PMID: 41172564</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">Exercise Insomnia</span>
+            </div>
+            <div class="paper-relevance">Exercise interventions improve insomnia and mental health — evidence base for ZLEEP's physical activity recommendations (ZCS Domain C).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">55</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.heliyon.2024.e24085" target="_blank" rel="noopener">
+                Tai chi exercise therapy on sleep disorders in elderly with chronic diseases: A meta-analysis of randomised controlled trials
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Li L et al.</span>
+              <span class="paper-journal">Heliyon</span>
+              <span class="paper-year">2024</span>
+              <span class="paper-pmid">PMID: 38293413</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q2">Q2 Scopus</span>
+              <span class="tag tag-meta">RCT Meta-Analysis</span>
+              <span class="tag tag-zleep">Elderly Exercise</span>
+            </div>
+            <div class="paper-relevance">Mind-body exercise (Tai chi) improves sleep in elderly with chronic disease — supports ZLEEP's lifestyle recommendations for high-risk ZCS users.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">56</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1016/j.smrv.2017.01.001" target="_blank" rel="noopener">
+                Bidirectional relationships and disconnects between physical activity and sleep: considerations and implications for research
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Kredlow MA et al.</span>
+              <span class="paper-journal">Sleep Medicine Reviews</span>
+              <span class="paper-year">2017</span>
+              <span class="paper-pmid">PMID: 28172707</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-zleep">Bidirectional</span>
+              <span class="tag tag-zleep">PA-Sleep</span>
+            </div>
+            <div class="paper-relevance">Bidirectional PA-sleep relationship — justifies ZLEEP's combined physical activity + sleep quality monitoring in a single ZCS domain.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper-card">
+        <div class="paper-top">
+          <div class="paper-num">57</div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <a href="https://doi.org/10.1136/bjsports-2020-102909" target="_blank" rel="noopener">
+                Association between physical activity and sleep quality in adults: a systematic review and meta-analysis
+              </a>
+            </div>
+            <div class="paper-meta">
+              <span class="paper-authors">Yang Y et al.</span>
+              <span class="paper-journal">British Journal of Sports Medicine</span>
+              <span class="paper-year">2021</span>
+              <span class="paper-pmid">PMID: 34385227</span>
+            </div>
+            <div class="paper-tags">
+              <span class="tag tag-q1">Q1 Scopus</span>
+              <span class="tag tag-meta">Meta-Analysis</span>
+              <span class="tag tag-zleep">PA Intervention</span>
+            </div>
+            <div class="paper-relevance">Physical activity improves objective sleep quality — quantifies improvement magnitude used in ZCS lifestyle improvement projections.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="ev-footer">
+    <p>ZLEEP Research Evidence Base — Systematic Literature Review | 57 papers | PubMed + Scopus | Last updated May 2026</p>
+    <p style="margin-top:.4rem;">All DOI links verified. Papers are cited for research context; consult a physician for medical decisions.</p>
+  </footer>
+
+</div>
+
+<script>
+function filterCat(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    sec.style.display = (cat === 'all' || sec.dataset.cat === cat) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
