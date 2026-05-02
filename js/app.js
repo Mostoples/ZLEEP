@@ -991,6 +991,35 @@ const app = (() => {
     ctx.globalAlpha = 1;
   }
 
+  // ── Yoga Recommendation ───────────────────────────────────
+  function updateYogaRecommendation() {
+    const panel = document.getElementById('yoga-rec-panel');
+    const list  = document.getElementById('yoga-rec-list');
+    if (!panel || !list || !window.ZleepYoga) return;
+
+    const lastSess = sessions[sessions.length - 1];
+    const sleepQ   = lastSess?.qualityScore ?? null;
+    const zcs      = SleepAnalysis.zcsScore(profile, sessions);
+    const lng      = SleepAnalysis.longevityIndex(profile, sessions);
+    const deepPct  = lastSess?.stageSummary?.deep ?? null;
+
+    const recs = ZleepYoga.recommend(sleepQ, zcs.score, lng.score, deepPct);
+    if (!recs.length) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+
+    const INFO = {
+      sleepDeep:    { name:'Tidur Nyenyak', icon:'🌙', dur:18 },
+      winddown:     { name:'Wind-Down Cepat', icon:'💨', dur:10 },
+      breathwork:   { name:'Terapi Pernapasan', icon:'🫧', dur:12 },
+      morningEnergy:{ name:'Energi Pagi', icon:'☀️', dur:10 },
+      stressRelief: { name:'Anti Stres & Cemas', icon:'🧘', dur:15 },
+    };
+    list.innerHTML = recs.map(id => {
+      const r = INFO[id] || { name:id, icon:'🧘', dur:10 };
+      return `<div class="yoga-rec-chip" onclick="ZleepYoga.startRoutine('${id}')">${r.icon} ${r.name} · ${r.dur} mnt →</div>`;
+    }).join('');
+  }
+
   // ── Circadian ─────────────────────────────────────────────
   function updateCircadianMarker() {
     const now = new Date(); let mins = now.getHours() * 60 + now.getMinutes();
@@ -1038,11 +1067,12 @@ const app = (() => {
     if (target) target.classList.add('active');
     document.querySelectorAll('.nav-item,.bnav-item').forEach(el =>
       el.classList.toggle('active', el.dataset.section === section));
-    const titles = { dashboard:'Dashboard', monitor:'Monitor Real-time', analysis:'Analisis', history:'Riwayat', profile:'Profil' };
+    const titles = { dashboard:'Dashboard', monitor:'Monitor Real-time', analysis:'Analisis', history:'Riwayat', profile:'Profil', yoga:'Yoga & Meditasi' };
     document.getElementById('page-title').textContent = titles[section] || section;
     if (section === 'history') loadHistory();
     if (section === 'analysis') updateAnalysisSection(
       stageTimeline.length ? SleepAnalysis.stageSummary(stageTimeline) : null, lastAhi);
+    if (section === 'yoga' && window.ZleepYoga) { ZleepYoga.initSection(); updateYogaRecommendation(); }
     location.hash = section;
   }
 

@@ -1323,6 +1323,217 @@ body::after {
   #cube-canvas { width: 200px; height: 200px; }
 }
 
+/* ── YOGA SECTION ─────────────────────────────────────────── */
+.yoga-rec-panel {
+  background: linear-gradient(135deg, rgba(123,108,246,0.12), rgba(34,211,238,0.07));
+  border: 1px solid rgba(123,108,246,0.3);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.yoga-rec-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  margin-bottom: 12px;
+}
+.yoga-rec-list { display: flex; gap: 10px; flex-wrap: wrap; }
+.yoga-rec-chip {
+  background: rgba(123,108,246,0.15);
+  border: 1px solid rgba(123,108,246,0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  transition: all .2s;
+}
+.yoga-rec-chip:hover { background: rgba(123,108,246,0.3); transform: translateY(-1px); }
+
+.yoga-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.yoga-tab {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  padding: 8px 18px;
+  transition: all .2s;
+}
+.yoga-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.yoga-tab:hover:not(.active) { background: var(--glass-hi); color: var(--text); }
+
+.yoga-section-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+/* Routine cards */
+.yoga-routines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.yoga-routine-card {
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  cursor: pointer; transition: all .25s;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.yoga-routine-card:hover { background: var(--glass-hi); border-color: var(--border-hi); transform: translateY(-2px); }
+.yrc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.yrc-left { flex: 1; }
+.yrc-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.yrc-meta { display: flex; gap: 10px; font-size: 11px; color: var(--muted); }
+.yrc-tag { font-size: 10px; font-weight: 700; border: 1px solid; border-radius: 6px; padding: 3px 8px; white-space: nowrap; flex-shrink: 0; }
+.yrc-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+.yrc-evidence { font-size: 10px; color: var(--muted); font-style: italic; }
+.yrc-btn {
+  background: rgba(123,108,246,0.15); border: none; border-radius: 8px;
+  color: var(--primary); cursor: pointer; font-size: 12px; font-weight: 700;
+  padding: 8px 14px; text-align: right; align-self: flex-end; transition: background .2s;
+}
+.yrc-btn:hover { background: rgba(123,108,246,0.3); }
+
+/* Pose cards */
+.yoga-poses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.yoga-pose-card {
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 12px;
+  cursor: pointer; transition: all .2s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+}
+.yoga-pose-card:hover { background: var(--glass-hi); transform: translateY(-2px); }
+.ypc-icon { font-size: 28px; }
+.ypc-name { font-size: 12px; font-weight: 700; }
+.ypc-sanskrit { font-size: 10px; color: var(--muted); font-style: italic; }
+.ypc-meta { display: flex; justify-content: space-between; width: 100%; font-size: 10px; }
+.ypc-dur { color: var(--teal); font-weight: 600; }
+.ypc-diff { color: var(--primary); letter-spacing: 0.02em; }
+.ypc-benefits { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+.ypc-chip { background: rgba(255,255,255,0.05); border-radius: 4px; font-size: 9px; padding: 2px 6px; color: var(--text-dim); text-align: center; }
+
+/* ── YOGA TIMER OVERLAY ──────────────────────────────────── */
+.yoga-timer-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,7,26,0.93);
+  backdrop-filter: var(--blur);
+  z-index: 1100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  transition: opacity .4s ease;
+}
+.yoga-timer-overlay.hidden { display: none; }
+
+.yt-content {
+  max-width: 420px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.yt-header {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+}
+.yt-close-btn {
+  background: rgba(255,255,255,0.08); border: none; border-radius: 50%;
+  color: var(--text-dim); cursor: pointer;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+.yt-close-btn:hover { background: rgba(255,255,255,0.16); }
+.yt-close-btn svg { width: 16px; height: 16px; }
+.yt-rtitle { font-size: 12px; color: var(--muted); font-weight: 600; text-align: center; flex: 1; }
+.yt-prog { font-size: 12px; color: var(--primary); font-weight: 700; }
+
+.yt-pose-icon { font-size: 42px; }
+.yt-pose-name { font-size: 20px; font-weight: 800; text-align: center; }
+.yt-pose-local { font-size: 13px; color: var(--primary); font-weight: 600; }
+
+.yt-ring-wrap {
+  position: relative; width: 160px; height: 160px;
+  display: flex; align-items: center; justify-content: center;
+}
+.yt-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.yt-ring-track { stroke: rgba(255,255,255,0.08); }
+.yt-ring-fill {
+  stroke: var(--primary);
+  stroke-dasharray: 327; stroke-dashoffset: 327;
+  transition: stroke-dashoffset 1s linear;
+  filter: drop-shadow(0 0 6px rgba(123,108,246,0.6));
+}
+.yt-center-overlay {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.yt-breath-circle {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  width: 80px; height: 80px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(123,108,246,0.35) 0%, rgba(123,108,246,0.05) 70%, transparent 100%);
+  transition: transform .8s ease, opacity .8s ease;
+  pointer-events: none;
+}
+.yt-countdown {
+  font-size: 40px; font-weight: 900;
+  font-variant-numeric: tabular-nums; line-height: 1; color: #fff;
+}
+.yt-breath-text { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--primary); }
+
+.yt-cue {
+  font-size: 12px; color: var(--text-dim); text-align: center;
+  max-width: 360px; line-height: 1.65;
+  padding: 10px 16px;
+  background: var(--glass); border-radius: var(--radius-sm); border: 1px solid var(--border);
+}
+.yt-bnote { font-size: 11px; color: var(--muted); text-align: center; font-style: italic; max-width: 320px; }
+
+.yt-controls { display: flex; gap: 10px; }
+.yt-ctrl-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 40px; border: none;
+  background: var(--primary); color: #fff;
+  cursor: pointer; font-size: 13px; font-weight: 700; transition: all .2s;
+}
+.yt-ctrl-btn svg { width: 16px; height: 16px; }
+.yt-ctrl-btn:hover { opacity: 0.85; }
+.yt-ctrl-btn.yt-skip-btn {
+  background: var(--glass); border: 1px solid var(--border); color: var(--text-dim);
+}
+.yt-ctrl-btn.yt-skip-btn:hover { background: var(--glass-hi); color: var(--text); }
+
+.yt-dots { display: flex; gap: 6px; }
+.yt-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: all .3s; }
+.yt-dot.active { background: var(--primary); transform: scale(1.3); }
+.yt-dot.done { background: var(--success); }
+.yt-next { font-size: 11px; color: var(--muted); text-align: center; }
+
+/* ── YOGA COMPLETE OVERLAY ───────────────────────────────── */
+.yoga-complete-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,7,26,0.88);
+  backdrop-filter: var(--blur);
+  z-index: 1200;
+  display: flex; align-items: center; justify-content: center;
+  animation: yco-in .4s ease;
+}
+.yoga-complete-overlay.hidden { display: none; }
+@keyframes yco-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.yco-box { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.yco-icon { font-size: 64px; animation: yco-pop .6s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes yco-pop { from { transform: scale(0); } to { transform: scale(1); } }
+.yco-title {
+  font-size: 32px; font-weight: 900;
+  background: linear-gradient(135deg, #7B6CF6, #22D3EE);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.yco-text { font-size: 15px; color: var(--text-dim); max-width: 300px; }
+.yco-sub { font-size: 13px; color: var(--muted); }
+
 /* ── SCROLLBAR ────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
