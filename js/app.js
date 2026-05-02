@@ -11,12 +11,14 @@ const app = (() => {
   let lastSampleTs = null;
   let profile = {};
   let charts = {};
-  let sessions = [];        // cached session history
-  let apneaEvents = [];     // current session apnea events
-  let respHistory = [];     // respiratory rate per epoch
-  let stageTimeline = [];   // sleep stage timeline current session
+  let sessions = [];
+  let apneaEvents = [];
+  let respHistory = [];
+  let stageTimeline = [];
   let lastBioAge = null;
   let lastAhi = 0;
+  let obCurrentStep = 0;
+  const OB_TOTAL = 4;
 
   const MAX_CHART_PTS = 300;
 
@@ -31,7 +33,97 @@ const app = (() => {
     loadProfileFromStorage();
     updateCircadianMarker();
     setInterval(updateCircadianMarker, 60000);
-    setInterval(updatePeriodicAnalysis, 30000); // every 30s update resp/stage/OSA
+    setInterval(updatePeriodicAnalysis, 30000);
+
+    // Show onboarding for first-time users
+    if (!localStorage.getItem('zleep_ob_done')) {
+      showOnboarding();
+    }
+  }
+
+  // ── Onboarding ────────────────────────────────────────────
+  function showOnboarding() {
+    obCurrentStep = 0;
+    const overlay = document.getElementById('onboarding-overlay');
+    overlay.classList.remove('hidden');
+    _obRenderStep(0);
+  }
+
+  function _obRenderStep(step) {
+    for (let i = 0; i < OB_TOTAL; i++) {
+      const s = document.getElementById('ob-step-' + i);
+      if (s) s.classList.toggle('hidden', i !== step);
+      const d = document.getElementById('ob-dot-' + i);
+      if (d) {
+        d.classList.toggle('active', i === step);
+        d.classList.toggle('done',   i < step);
+      }
+    }
+  }
+
+  function obNext() {
+    _obSaveStep(obCurrentStep);
+    if (obCurrentStep < OB_TOTAL - 1) {
+      obCurrentStep++;
+      _obRenderStep(obCurrentStep);
+    }
+  }
+
+  function obBack() {
+    if (obCurrentStep > 0) {
+      obCurrentStep--;
+      _obRenderStep(obCurrentStep);
+    }
+  }
+
+  function obFinish() {
+    _obSaveStep(obCurrentStep);
+    localStorage.setItem('zleep_ob_done', '1');
+    document.getElementById('onboarding-overlay').classList.add('hidden');
+    applyProfileToForm();
+    updateProfileCompletion();
+    zdb.saveProfile(profile);
+    persist();
+    showToast('Setup selesai! Selamat datang di ZLEEP 🌙');
+  }
+
+  function obSkip() {
+    localStorage.setItem('zleep_ob_done', '1');
+    document.getElementById('onboarding-overlay').classList.add('hidden');
+  }
+
+  function _obSaveStep(step) {
+    const g = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+    const c = (id) => { const el = document.getElementById(id); return el ? el.checked : false; };
+    if (step === 1) {
+      profile = { ...profile,
+        name:   g('ob-name'),
+        age:    g('ob-age'),
+        gender: g('ob-gender'),
+        height: g('ob-height'),
+        weight: g('ob-weight')
+      };
+      // Auto-detect obesity from BMI
+      if (profile.height && profile.weight) {
+        const bmi = profile.weight / ((profile.height / 100) ** 2);
+        profile.obesity = bmi >= 30;
+      }
+    } else if (step === 2) {
+      profile = { ...profile,
+        hypertension: c('ob-hypertension'),
+        diabetes:     c('ob-diabetes'),
+        obesity:      c('ob-obesity'),
+        smoker:       c('ob-smoker'),
+        heartHistory: c('ob-heart-history'),
+        insomnia:     c('ob-insomnia')
+      };
+    } else if (step === 3) {
+      profile = { ...profile,
+        bedtime:  g('ob-bedtime'),
+        duration: g('ob-duration'),
+        activity: g('ob-activity')
+      };
+    }
   }
 
   // ── Auth ──────────────────────────────────────────────────
@@ -58,13 +150,12 @@ const app = (() => {
   function showAuth()  { document.getElementById('auth-modal').classList.remove('hidden'); }
   function closeAuth() { document.getElementById('auth-modal').classList.add('hidden'); clearAuthErrors(); }
 
-  function switchAuthTab(tab) {
-    document.getElementById('auth-login').classList.toggle('hidden', tab !== 'login');
-    document.getElementById('auth-register').classList.toggle('hidden', tab !== 'register');
-    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  function switchAuthPanel(panel) {
+    document.getElementById('auth-login-panel').classList.toggle('hidden', panel !== 'login');
+    document.getElementById('auth-register-panel').classList.toggle('hidden', panel !== 'register');
     clearAuthErrors();
   }
+  function switchAuthTab(tab) { switchAuthPanel(tab); } // backward compat
 
   async function doLogin() {
     const email = document.getElementById('login-email').value.trim();
@@ -597,38 +688,84 @@ const app = (() => {
 
   // ── Profile ───────────────────────────────────────────────
   function saveProfile() {
-    profile = { ...profile, name: document.getElementById('pf-name').value,
-      age: document.getElementById('pf-age').value, gender: document.getElementById('pf-gender').value };
-    zdb.saveProfile(profile); persist(); showToast('Profil disimpan');
+    const h = parseFloat(document.getElementById('pf-height')?.value) || 0;
+    const w = parseFloat(document.getElementById('pf-weight')?.value) || 0;
+    profile = { ...profile,
+      name:   document.getElementById('pf-name').value,
+      age:    document.getElementById('pf-age').value,
+      gender: document.getElementById('pf-gender').value,
+      height: h || profile.height,
+      weight: w || profile.weight
+    };
+    if (h && w) profile.bmi = +(w / ((h/100)**2)).toFixed(1);
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); showToast('Profil disimpan');
   }
   function saveRiskFactors() {
     profile = { ...profile,
       hypertension: document.getElementById('rf-hypertension').checked,
-      diabetes: document.getElementById('rf-diabetes').checked,
-      obesity:  document.getElementById('rf-obesity').checked,
-      smoker:   document.getElementById('rf-smoker').checked,
+      diabetes:     document.getElementById('rf-diabetes').checked,
+      obesity:      document.getElementById('rf-obesity').checked,
+      smoker:       document.getElementById('rf-smoker').checked,
       heartHistory: document.getElementById('rf-heart-history').checked,
-      insomnia: document.getElementById('rf-insomnia').checked };
-    zdb.saveProfile(profile); persist(); showToast('Faktor risiko disimpan');
+      insomnia:     document.getElementById('rf-insomnia').checked };
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); showToast('Faktor risiko disimpan');
   }
   function savePreferences() {
-    profile = { ...profile, bedtime: document.getElementById('pf-bedtime').value,
-      duration: document.getElementById('pf-duration').value };
-    zdb.saveProfile(profile); persist(); showToast('Preferensi disimpan');
+    profile = { ...profile,
+      bedtime:  document.getElementById('pf-bedtime').value,
+      duration: document.getElementById('pf-duration').value,
+      activity: document.getElementById('pf-activity')?.value || 'moderate'
+    };
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); showToast('Preferensi disimpan');
   }
+
+  function updateProfileCompletion() {
+    const checks = [
+      { key: 'name',    label: 'Nama' },
+      { key: 'age',     label: 'Usia' },
+      { key: 'gender',  label: 'Jenis Kelamin' },
+      { key: 'height',  label: 'Tinggi Badan' },
+      { key: 'weight',  label: 'Berat Badan' },
+      { key: 'bedtime', label: 'Jam Tidur' },
+      { key: '_risk',   label: 'Faktor Risiko' },
+    ];
+    const hasRisk = profile.hypertension !== undefined || profile.diabetes !== undefined;
+    const done = checks.filter(c => {
+      if (c.key === '_risk') return hasRisk;
+      return !!profile[c.key];
+    });
+    const pct = Math.round((done.length / checks.length) * 100);
+    const pctEl = document.getElementById('complete-pct');
+    const fillEl = document.getElementById('complete-fill');
+    const itemsEl = document.getElementById('complete-items');
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (itemsEl) {
+      itemsEl.innerHTML = checks.map(c => {
+        const isDone = c.key === '_risk' ? hasRisk : !!profile[c.key];
+        return `<span class="complete-item ${isDone ? 'done' : ''}">${c.label}</span>`;
+      }).join('');
+    }
+  }
+
   function persist() { localStorage.setItem('zleep_profile', JSON.stringify(profile)); }
   function loadProfileFromStorage() {
     const s = localStorage.getItem('zleep_profile');
-    if (s) { try { profile = JSON.parse(s); applyProfileToForm(); } catch(_) {} }
+    if (s) {
+      try { profile = JSON.parse(s); applyProfileToForm(); updateProfileCompletion(); } catch(_) {}
+    }
   }
   function applyProfileToForm() {
     const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
     const chk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
-    set('pf-name', profile.name); set('pf-age', profile.age); set('pf-gender', profile.gender);
+    set('pf-name', profile.name);    set('pf-age', profile.age);
+    set('pf-gender', profile.gender); set('pf-height', profile.height);
+    set('pf-weight', profile.weight);
     chk('rf-hypertension', profile.hypertension); chk('rf-diabetes', profile.diabetes);
-    chk('rf-obesity', profile.obesity); chk('rf-smoker', profile.smoker);
+    chk('rf-obesity', profile.obesity);           chk('rf-smoker', profile.smoker);
     chk('rf-heart-history', profile.heartHistory); chk('rf-insomnia', profile.insomnia);
     set('pf-bedtime', profile.bedtime); set('pf-duration', profile.duration);
+    set('pf-activity', profile.activity);
   }
 
   // ── PDF Export ────────────────────────────────────────────
@@ -734,8 +871,10 @@ const app = (() => {
     toggleSession, toggleSidebar,
     saveProfile, saveRiskFactors, savePreferences,
     loadHistory, exportPdf,
-    showAuth, closeAuth, switchAuthTab,
-    doLogin, doRegister, doAnonymous, doLogout
+    showAuth, closeAuth, switchAuthTab, switchAuthPanel,
+    doLogin, doRegister, doAnonymous, doLogout,
+    // Onboarding
+    obNext, obBack, obFinish, obSkip, showOnboarding
   };
 
 })();

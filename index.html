@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ZLEEP — Smart Sleep Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -12,6 +15,191 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
+
+<!-- Background blobs (pseudo-elements handle 2, these are the other 2) -->
+<div class="blob-3"></div>
+<div class="blob-4"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     ONBOARDING OVERLAY
+══════════════════════════════════════════════════════════ -->
+<div id="onboarding-overlay" class="hidden">
+  <div class="ob-card">
+
+    <!-- Dots -->
+    <div class="ob-dots">
+      <div class="ob-dot active" id="ob-dot-0"></div>
+      <div class="ob-dot" id="ob-dot-1"></div>
+      <div class="ob-dot" id="ob-dot-2"></div>
+      <div class="ob-dot" id="ob-dot-3"></div>
+    </div>
+
+    <!-- Step 0: Welcome -->
+    <div id="ob-step-0" class="ob-step">
+      <div class="ob-icon">🌙</div>
+      <h1 class="ob-title">Selamat Datang<br>di ZLEEP</h1>
+      <p class="ob-subtitle">Monitor kualitas tidur & deteksi risiko kesehatan jantung secara real-time lewat bantal pintar berbasis IMU.</p>
+      <div class="ob-btn-row">
+        <button class="ob-btn" onclick="app.obNext()">Mulai Setup →</button>
+      </div>
+      <span class="ob-skip" onclick="app.obSkip()">Lewati, masuk langsung</span>
+    </div>
+
+    <!-- Step 1: Data Diri -->
+    <div id="ob-step-1" class="ob-step hidden">
+      <div class="ob-icon">👤</div>
+      <h1 class="ob-title">Data Diri</h1>
+      <p class="ob-subtitle">Bantu kami personalisasi analisis tidur dan risiko kesehatanmu.</p>
+      <div class="ob-form">
+        <input class="ob-input" type="text" id="ob-name" placeholder="Nama lengkap" autocomplete="name" />
+        <input class="ob-input" type="number" id="ob-age" placeholder="Usia (tahun)" min="10" max="100" />
+        <select class="ob-input" id="ob-gender">
+          <option value="">Jenis kelamin...</option>
+          <option value="M">Laki-laki</option>
+          <option value="F">Perempuan</option>
+        </select>
+        <input class="ob-input" type="number" id="ob-height" placeholder="Tinggi badan (cm)" min="100" max="250" />
+        <input class="ob-input" type="number" id="ob-weight" placeholder="Berat badan (kg)" min="30" max="300" />
+      </div>
+      <div class="ob-btn-row">
+        <button class="ob-btn-back" onclick="app.obBack()">←</button>
+        <button class="ob-btn" onclick="app.obNext()">Lanjut →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Faktor Risiko -->
+    <div id="ob-step-2" class="ob-step hidden">
+      <div class="ob-icon">❤️</div>
+      <h1 class="ob-title">Kondisi Kesehatan</h1>
+      <p class="ob-subtitle">Pilih kondisi yang pernah didiagnosis dokter. Data ini hanya tersimpan di device-mu.</p>
+      <div class="ob-checks">
+        <label class="ob-check-label">
+          <input type="checkbox" id="ob-hypertension" />
+          <div class="ob-check-box"></div>
+          🩸 Hipertensi (tekanan darah tinggi)
+        </label>
+        <label class="ob-check-label">
+          <input type="checkbox" id="ob-diabetes" />
+          <div class="ob-check-box"></div>
+          🍬 Diabetes Melitus
+        </label>
+        <label class="ob-check-label">
+          <input type="checkbox" id="ob-obesity" />
+          <div class="ob-check-box"></div>
+          ⚖️ Obesitas (BMI ≥ 30)
+        </label>
+        <label class="ob-check-label">
+          <input type="checkbox" id="ob-smoker" />
+          <div class="ob-check-box"></div>
+          🚬 Perokok aktif / mantan perokok
+        </label>
+        <label class="ob-check-label">
+          <input type="checkbox" id="ob-heart-history" />
+          <div class="ob-check-box"></div>
+          🫀 Riwayat penyakit jantung / stroke
+        </label>
+        <label class="ob-check-label">
+          <input type="checkbox" id="ob-insomnia" />
+          <div class="ob-check-box"></div>
+          😴 Insomnia / gangguan tidur
+        </label>
+      </div>
+      <div class="ob-btn-row">
+        <button class="ob-btn-back" onclick="app.obBack()">←</button>
+        <button class="ob-btn" onclick="app.obNext()">Lanjut →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Preferensi Tidur -->
+    <div id="ob-step-3" class="ob-step hidden">
+      <div class="ob-icon">⏰</div>
+      <h1 class="ob-title">Preferensi Tidur</h1>
+      <p class="ob-subtitle">Atur target tidur idealmu agar rekomendasi lebih personal dan akurat.</p>
+      <div class="ob-form">
+        <div>
+          <label style="display:block;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;font-weight:600;">Target jam tidur</label>
+          <input class="ob-input" type="time" id="ob-bedtime" value="22:00" />
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;font-weight:600;">Target durasi tidur</label>
+          <select class="ob-input" id="ob-duration">
+            <option value="6">6 jam</option>
+            <option value="7">7 jam</option>
+            <option value="8" selected>8 jam (rekomendasi)</option>
+            <option value="9">9 jam</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;font-weight:600;">Aktivitas fisik rutin</label>
+          <select class="ob-input" id="ob-activity">
+            <option value="none">Tidak ada</option>
+            <option value="low">Ringan (1–2x/minggu)</option>
+            <option value="moderate" selected>Sedang (3–4x/minggu)</option>
+            <option value="high">Aktif (5+x/minggu)</option>
+          </select>
+        </div>
+      </div>
+      <div class="ob-btn-row">
+        <button class="ob-btn-back" onclick="app.obBack()">←</button>
+        <button class="ob-btn" onclick="app.obFinish()">Selesai ✓</button>
+      </div>
+    </div>
+
+  </div><!-- /ob-card -->
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     AUTH MODAL — GLASSMORPHISM
+══════════════════════════════════════════════════════════ -->
+<div id="auth-modal" class="modal-overlay hidden">
+  <div class="auth-glass-card">
+    <button class="auth-close" onclick="app.closeAuth()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <!-- Login panel -->
+    <div id="auth-login-panel">
+      <h2 class="auth-title">Welcome Back 👋</h2>
+      <div class="auth-input-group">
+        <input class="auth-input" type="email" id="login-email" placeholder="Email address" autocomplete="email" />
+        <input class="auth-input" type="password" id="login-password" placeholder="Password" autocomplete="current-password" />
+      </div>
+      <div class="auth-forgot">Forgot Password?</div>
+      <button class="auth-btn" onclick="app.doLogin()">Login</button>
+      <div class="auth-divider">continue with</div>
+      <div class="auth-social">
+        <div class="auth-social-btn" title="Facebook">🌐</div>
+        <div class="auth-social-btn" title="Google">G</div>
+        <div class="auth-social-btn" title="Twitter">𝕏</div>
+      </div>
+      <div class="auth-switch">Don't have account? <a onclick="app.switchAuthPanel('register')">Sign up</a></div>
+      <button class="auth-guest-btn" onclick="app.doAnonymous()">Lanjut sebagai Tamu (data lokal)</button>
+      <p id="auth-error" class="auth-error-msg hidden"></p>
+    </div>
+
+    <!-- Register panel -->
+    <div id="auth-register-panel" class="hidden">
+      <h2 class="auth-title">Create Account ✨</h2>
+      <div class="auth-input-group">
+        <input class="auth-input" type="text" id="reg-name" placeholder="Username" autocomplete="name" />
+        <input class="auth-input" type="email" id="reg-email" placeholder="Email address" autocomplete="email" />
+        <input class="auth-input" type="password" id="reg-password" placeholder="Password" autocomplete="new-password" />
+        <input class="auth-input" type="password" id="reg-confirm" placeholder="Confirm password" autocomplete="new-password" />
+      </div>
+      <button class="auth-btn" style="margin-top:16px" onclick="app.doRegister()">Sign up</button>
+      <div class="auth-divider">continue with</div>
+      <div class="auth-social">
+        <div class="auth-social-btn">🌐</div>
+        <div class="auth-social-btn">G</div>
+        <div class="auth-social-btn">𝕏</div>
+      </div>
+      <div class="auth-switch">Already have account? <a onclick="app.switchAuthPanel('login')">Sign in</a></div>
+      <p id="reg-error" class="auth-error-msg hidden"></p>
+    </div>
+
+  </div>
+</div>
+
 <div id="app">
 
   <!-- ── SIDEBAR ─────────────────────────────────────────── -->
@@ -101,58 +289,9 @@
       </div>
     </div>
 
-    <!-- ── AUTH MODAL ────────────────────────────────────── -->
-    <div id="auth-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <button class="modal-close" onclick="app.closeAuth()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="tab-login" onclick="app.switchAuthTab('login')">Masuk</button>
-          <button class="auth-tab" id="tab-register" onclick="app.switchAuthTab('register')">Daftar</button>
-        </div>
-
-        <!-- Login -->
-        <div id="auth-login" class="auth-panel">
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="login-email" placeholder="nama@email.com" />
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="login-password" placeholder="Password" />
-          </div>
-          <button class="btn-primary" style="width:100%" onclick="app.doLogin()">Masuk</button>
-          <button class="btn-ghost" style="width:100%; margin-top:8px" onclick="app.doAnonymous()">
-            Lanjut sebagai Tamu (data lokal)
-          </button>
-          <p id="auth-error" class="auth-error hidden"></p>
-        </div>
-
-        <!-- Register -->
-        <div id="auth-register" class="auth-panel hidden">
-          <div class="form-group">
-            <label>Nama Lengkap</label>
-            <input type="text" id="reg-name" placeholder="Nama Anda" />
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="reg-email" placeholder="nama@email.com" />
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="reg-password" placeholder="Min. 6 karakter" />
-          </div>
-          <button class="btn-primary" style="width:100%" onclick="app.doRegister()">Buat Akun</button>
-          <p id="reg-error" class="auth-error hidden"></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════════════
          DASHBOARD
-    ══════════════════════════════════════════════════════ -->
+    ════════════════════════════════════════════════════ -->
     <section id="section-dashboard" class="section active">
       <div class="section-header">
         <h2>Dashboard</h2>
@@ -162,7 +301,6 @@
         </button>
       </div>
 
-      <!-- Row 1: core metrics -->
       <div class="metrics-grid">
         <div class="metric-card">
           <div class="metric-header">
@@ -242,7 +380,6 @@
           <div class="metric-badge" id="bio-age-badge">Butuh ≥3 sesi</div>
         </div>
 
-        <!-- Circadian wide card -->
         <div class="metric-card wide">
           <div class="metric-header">
             <span class="metric-label">Ritme Sirkadian</span>
@@ -261,7 +398,6 @@
         </div>
       </div>
 
-      <!-- Recommendations panel -->
       <div id="recommendations-panel" class="recommendations-panel hidden">
         <div class="rec-header">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
@@ -271,9 +407,9 @@
       </div>
     </section>
 
-    <!-- ══════════════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════════════
          MONITOR
-    ══════════════════════════════════════════════════════ -->
+    ════════════════════════════════════════════════════ -->
     <section id="section-monitor" class="section">
       <div class="section-header">
         <h2>Monitor Real-time</h2>
@@ -309,9 +445,9 @@
       </div>
     </section>
 
-    <!-- ══════════════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════════════
          ANALISIS
-    ══════════════════════════════════════════════════════ -->
+    ════════════════════════════════════════════════════ -->
     <section id="section-analysis" class="section">
       <div class="section-header">
         <h2>Analisis Sesi</h2>
@@ -321,7 +457,6 @@
         </button>
       </div>
 
-      <!-- Sleep stage donut -->
       <div class="analysis-grid">
         <div class="chart-card">
           <div class="chart-header"><span>Distribusi Tahap Tidur (sesi terakhir)</span></div>
@@ -330,7 +465,7 @@
             <div class="stage-legend">
               <div class="stage-legend-item"><span class="dot" style="background:#7B6CF6"></span>Tidur Dalam <span id="pct-deep">—</span></div>
               <div class="stage-legend-item"><span class="dot" style="background:#22D3EE"></span>REM <span id="pct-rem">—</span></div>
-              <div class="stage-legend-item"><span class="dot" style="background:#64748B"></span>Tidur Ringan <span id="pct-light">—</span></div>
+              <div class="stage-legend-item"><span class="dot" style="background:rgba(255,255,255,0.3)"></span>Ringan <span id="pct-light">—</span></div>
               <div class="stage-legend-item"><span class="dot" style="background:#FB923C"></span>Terjaga <span id="pct-awake">—</span></div>
             </div>
           </div>
@@ -342,14 +477,13 @@
         </div>
       </div>
 
-      <!-- Bio age & OSA detail -->
       <div class="analysis-cards">
         <div class="analysis-detail-card">
           <h3>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Estimasi Usia Biologis
           </h3>
-          <div id="bio-age-detail" class="bio-age-detail">
+          <div id="bio-age-detail">
             <div class="bio-age-numbers">
               <div><span class="bio-label">Usia Kronologis</span><span id="chrono-age-val" class="bio-num">—</span></div>
               <div class="bio-arrow">→</div>
@@ -383,9 +517,9 @@
       </div>
     </section>
 
-    <!-- ══════════════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════════════
          HISTORY
-    ══════════════════════════════════════════════════════ -->
+    ════════════════════════════════════════════════════ -->
     <section id="section-history" class="section">
       <div class="section-header">
         <h2>Riwayat Tidur</h2>
@@ -406,7 +540,6 @@
         </div>
       </div>
 
-      <!-- Weekly summary stats -->
       <div class="weekly-stats" id="weekly-stats"></div>
 
       <div id="sessions-list" class="sessions-list">
@@ -417,24 +550,39 @@
       </div>
     </section>
 
-    <!-- ══════════════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════════════
          PROFILE
-    ══════════════════════════════════════════════════════ -->
+    ════════════════════════════════════════════════════ -->
     <section id="section-profile" class="section">
       <div class="section-header"><h2>Profil & Personalisasi</h2></div>
+
+      <!-- Personalization completion bar -->
+      <div class="profile-complete-bar" id="profile-complete-bar">
+        <div class="complete-header">
+          <span>Kelengkapan Profil</span>
+          <span class="complete-pct" id="complete-pct">0%</span>
+        </div>
+        <div class="complete-track">
+          <div class="complete-fill" id="complete-fill" style="width:0%"></div>
+        </div>
+        <div class="complete-items" id="complete-items"></div>
+      </div>
+
       <div class="profile-grid">
         <div class="profile-card">
-          <h3>Data Pengguna</h3>
+          <h3>👤 Data Pengguna</h3>
           <div class="form-group"><label>Nama</label><input type="text" id="pf-name" placeholder="Nama lengkap" /></div>
           <div class="form-group"><label>Usia</label><input type="number" id="pf-age" placeholder="Usia (tahun)" min="10" max="100" /></div>
           <div class="form-group"><label>Jenis Kelamin</label>
             <select id="pf-gender"><option value="">Pilih...</option><option value="M">Laki-laki</option><option value="F">Perempuan</option></select>
           </div>
+          <div class="form-group"><label>Tinggi Badan (cm)</label><input type="number" id="pf-height" placeholder="170" min="100" max="250" /></div>
+          <div class="form-group"><label>Berat Badan (kg)</label><input type="number" id="pf-weight" placeholder="65" min="30" max="300" /></div>
           <button class="btn-primary" onclick="app.saveProfile()">Simpan Profil</button>
         </div>
 
         <div class="profile-card">
-          <h3>Faktor Risiko Kesehatan</h3>
+          <h3>❤️ Faktor Risiko Kesehatan</h3>
           <div class="risk-checks">
             <label class="risk-check"><input type="checkbox" id="rf-hypertension" /> Hipertensi</label>
             <label class="risk-check"><input type="checkbox" id="rf-diabetes" /> Diabetes</label>
@@ -447,19 +595,31 @@
         </div>
 
         <div class="profile-card">
-          <h3>Preferensi Tidur</h3>
+          <h3>⏰ Preferensi Tidur</h3>
           <div class="form-group"><label>Target Jam Tidur</label><input type="time" id="pf-bedtime" value="22:00" /></div>
           <div class="form-group"><label>Target Durasi</label>
             <select id="pf-duration"><option value="6">6 jam</option><option value="7">7 jam</option><option value="8" selected>8 jam</option><option value="9">9 jam</option></select>
+          </div>
+          <div class="form-group"><label>Aktivitas Fisik</label>
+            <select id="pf-activity">
+              <option value="none">Tidak ada</option>
+              <option value="low">Ringan (1–2x/minggu)</option>
+              <option value="moderate" selected>Sedang (3–4x/minggu)</option>
+              <option value="high">Aktif (5+x/minggu)</option>
+            </select>
           </div>
           <button class="btn-secondary" onclick="app.savePreferences()">Simpan Preferensi</button>
         </div>
 
         <div class="profile-card info-card">
-          <h3>Tentang ZLEEP</h3>
+          <h3>ℹ️ Tentang ZLEEP</h3>
           <p>Versi 2.0.0 — Smart Pillow IoT dengan sensor IMU.</p>
           <div class="account-info" id="account-info"></div>
           <button class="btn-ghost btn-sm" id="logout-btn" onclick="app.doLogout()" style="display:none">Keluar</button>
+          <button class="btn-secondary btn-sm" onclick="app.showOnboarding()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Ulangi Setup Awal
+          </button>
           <div class="research-title">
             <strong>Judul Penelitian:</strong>
             <em>ZLEEP: Pengembangan Sistem IoT Berbasis Sensor IMU pada Smart Pillow untuk Monitoring Kualitas Tidur dan Deteksi Dini Faktor Risiko Penyakit Jantung dan Stroke</em>
