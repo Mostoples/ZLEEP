@@ -1,7 +1,7 @@
 # Dokumen Perancangan Aplikasi ZLEEP
-**Versi:** 1.0  
-**Tanggal:** 1 Mei 2026  
-**Status:** Draft — Menunggu Persetujuan  
+**Versi:** 2.0  
+**Tanggal:** 2 Mei 2026  
+**Status:** Aktif — v2.0 Live di Firebase Hosting  
 
 ---
 
@@ -29,7 +29,7 @@ ZLEEP adalah aplikasi web Single Page Application (SPA) yang terhubung ke bantal
 │                               │  Firebase         │ │
 │                               │  ├─ Hosting       │ │
 │                               │  ├─ Realtime DB   │ │
-│                               │  └─ Auth (future) │ │
+│                               │  └─ Auth          │ │
 │                               └──────────────────┘ │
 └─────────────────────────────────────────────────────┘
 ```
@@ -76,8 +76,11 @@ zleep/
 ├── js/
 │   ├── firebase-config.js  # Inisialisasi Firebase
 │   ├── bluetooth.js        # Web Bluetooth API (BLE manager)
-│   ├── database.js         # Firebase Realtime DB operations
-│   ├── sleep.js            # Algoritma analisis tidur
+│   ├── database.js         # Firebase Realtime DB operations (auth-aware UID)
+│   ├── sleep.js            # Algoritma analisis tidur (v2.0: stages, OSA, bio age, RR)
+│   ├── auth.js             # Firebase Auth manager (email/password + anonymous) [v1.1]
+│   ├── recommendations.js  # Adaptive recommendation engine [v2.0]
+│   ├── pdf-export.js       # jsPDF medical report generator [v2.0]
 │   └── app.js              # Main app controller (SPA router + UI)
 ├── docs/
 │   ├── SLR.md              # Systematic Literature Review
@@ -86,7 +89,7 @@ zleep/
 ├── database.rules.json     # Firebase DB security rules
 └── .github/
     └── workflows/
-        └── firebase-deploy.yml  # CI/CD auto-deploy
+        └── firebase-deploy.yml  # CI/CD auto-deploy (service account)
 ```
 
 ### 4.2 Modul JavaScript
@@ -115,7 +118,7 @@ zleep/
 | `getSessions(limit)` | Ambil riwayat sesi |
 | `saveProfile(data)` | Simpan profil pengguna |
 
-#### `sleep.js` — `SleepAnalysis` objek
+#### `sleep.js` — `SleepAnalysis` objek (v2.0)
 | Method | Fungsi |
 |--------|--------|
 | `detectPosition(ax,ay,az)` | Klasifikasi posisi: terlentang/tengkurap/kiri/kanan |
@@ -125,8 +128,42 @@ zleep/
 | `qualityLabel(score)` | Label: Sangat Baik/Baik/Cukup/Buruk |
 | `cardioRisk(profile, quality, duration)` | Skor risiko kardiovaskular (0–100) |
 | `riskLabel(score)` | Label: Rendah/Sedang/Tinggi/Kritis |
+| `respiratoryRate(samples, hz)` | Hitung laju napas (bpm) via zero-crossing az ter-detrend |
+| `classifyEpoch(samples)` | Klasifikasi epoch 30s: deep/light/rem/awake (stddev + kurtosis) |
+| `sleepStageTimeline(samples, hz)` | Array stage per epoch 30 detik |
+| `detectApneaEvents(samples, hz)` | Deteksi event apnea: rr===null + intensitas < 0.02 |
+| `biologicalAge(chronoAge, sessions)` | Estimasi usia biologis (Pavanello 2019): offset berdasarkan kualitas + durasi + circadian SD |
 
-#### `app.js` — IIFE App Controller
+#### `auth.js` — `ZleepAuth` class (v1.1)
+| Method | Fungsi |
+|--------|--------|
+| `loginEmail(email, password)` | Login dengan email/password |
+| `registerEmail(email, password, name)` | Registrasi akun baru |
+| `loginAnonymous()` | Login sebagai tamu (anonymous) |
+| `upgradeAnonymous(email, password, name)` | Upgrade tamu → akun permanen |
+| `logout()` | Logout dari Firebase Auth |
+
+#### `recommendations.js` — `Recommendations` class (v2.0)
+`Recommendations.generate({profile, sessions, lastSession, currentPosition, osaAhi, respiratoryRate, bioAge})` — menghasilkan max 5 rekomendasi adaptif (high/medium/low priority) berdasarkan:
+- Posisi tidur (prone, sisi kanan dengan riwayat jantung)
+- OSA AHI (mild/moderate/severe threshold)
+- Laju napas abnormal
+- Ritme sirkadian terlambat
+- Delta usia biologis ≥ 3 tahun
+- Komorbiditas (hipertensi+insomnia, diabetes+kualitas buruk)
+- Positive reinforcement untuk pola baik
+
+#### `pdf-export.js` — `PdfExport` class (v2.0)
+`PdfExport.generate({profile, session, stageSummary, apneaEvents, bioAge, recommendations})` — laporan medis A4 format jsPDF 2.5.1:
+- Header branded ZLEEP
+- Info pasien (nama, usia, gender)
+- 4 kartu metrik utama (kualitas, durasi, AHI, laju napas)
+- Sleep stage stacked bar chart
+- OSA assessment cards
+- Risk factors dan rekomendasi dengan color-coded priority
+- Footer disclaimer medis
+
+#### `app.js` — IIFE App Controller (v2.0)
 | Fungsi | Deskripsi |
 |--------|-----------|
 | `init()` | Setup semua komponen, router, circadian marker |
@@ -135,9 +172,12 @@ zleep/
 | `onImuData(imu)` | Handler data IMU: update chart, DB, analisis |
 | `updateCharts(imu)` | Push data ke Chart.js (real-time) |
 | `detectPosition(imu)` | Update UI posisi tidur |
-| `setupRouter()` | Hash-based SPA routing (#dashboard, #monitor, dll) |
-| `navigateTo(section)` | Pindah antar halaman SPA |
-| `loadHistory()` | Load riwayat sesi dari Firebase |
+| `updatePeriodicAnalysis()` | Analisis periodik 30s: RR, stage, OSA, rekomendasi |
+| `updateAnalysisSection()` | Render halaman Analysis (donut, line chart, bio age, OSA scale) |
+| `generateRecommendations()` | Render panel rekomendasi adaptif |
+| `exportPdf()` | Generate dan unduh laporan PDF medis |
+| `setupRouter()` | Hash-based SPA routing (#dashboard, #monitor, #analysis, #history, #profile) |
+| `loadHistory()` | Load riwayat sesi + weekly stats dari Firebase |
 | `saveProfile()` | Simpan profil + faktor risiko |
 
 ---
@@ -149,10 +189,14 @@ zleep/
 
 **Komponen UI:**
 - **Kualitas Tidur** — Skor 0-100 + progress bar + badge (Sangat Baik/Baik/Cukup/Buruk)
+- **Sleep Stage** — Label stage saat ini + mini bar proporsi (deep/REM/light/awake) [v2.0]
+- **Laju Napas** — bpm real-time + status (normal/tinggi/rendah) [v2.0]
+- **OSA AHI** — Nilai AHI + badge severity (Normal/Ringan/Sedang/Berat) [v2.0]
+- **Usia Biologis** — Perbandingan bio age vs usia kronologis + delta [v2.0]
 - **Posisi Tidur** — Label posisi real-time + visual representasi badan
-- **Indeks Gerakan** — Nilai intensitas + gauge semi-circle animated
 - **Risiko Kardiovaskular** — Persentase risiko + badge warna (hijau/kuning/merah)
 - **Ritme Sirkadian** — Timeline bar dengan marker posisi waktu saat ini
+- **Panel Rekomendasi** — Max 5 tip adaptif dengan color-coded priority [v2.0]
 - **Tombol Mulai/Akhiri Sesi** — Dengan timer sesi aktif di header
 
 ### 5.2 Monitor Real-time (`#monitor`)
@@ -164,21 +208,34 @@ zleep/
 - **Raw Data Grid** — 6 kotak nilai numerik (aX, aY, aZ, gX, gY, gZ) real-time
 - **Badge sampling rate** — Frekuensi pengambilan data (Hz)
 
-### 5.3 Riwayat (`#history`)
+### 5.3 Analisis (`#analysis`) [v2.0]
+**Tujuan**: Deep-dive analisis sesi terakhir
+
+**Komponen UI:**
+- **Sleep Stage Donut Chart** — Proporsi waktu per stage (deep/REM/light/awake)
+- **Respiratory Rate Line Chart** — Laju napas per epoch sepanjang sesi
+- **Bio Age Detail Card** — Breakdown komponen penuaan biologis
+- **OSA AHI Scale** — Gauge dengan jarum menunjukkan nilai AHI
+- **Tombol Export PDF** — Unduh laporan medis lengkap
+
+### 5.4 Riwayat (`#history`)
 **Tujuan**: Analisis tren tidur historis
 
 **Komponen UI:**
-- **Bar Chart** — Kualitas tidur 7 sesi terakhir
+- **Bar Chart Kualitas** — Kualitas tidur 7 sesi terakhir
+- **Bar Chart Durasi** — Durasi tidur 7 sesi terakhir [v2.0]
+- **Weekly Stats Grid** — 4 kartu: rata-rata kualitas, rata-rata durasi, total sesi, skor tertinggi [v2.0]
 - **Daftar Sesi** — Tanggal, durasi, skor kualitas setiap sesi
 - Data diambil dari Firebase Realtime Database
 
-### 5.4 Profil (`#profile`)
+### 5.5 Profil (`#profile`)
 **Tujuan**: Personalisasi pengguna
 
 **Komponen UI:**
 - **Data Pengguna** — Nama, usia, jenis kelamin
 - **Faktor Risiko Kesehatan** — Checkbox: hipertensi, diabetes, obesitas, perokok, riwayat jantung, insomnia
 - **Preferensi Tidur** — Target jam tidur, durasi, frekuensi notifikasi
+- **Auth Controls** — Tombol logout / info akun [v1.1]
 - **Info Penelitian** — Judul penelitian, versi app
 
 ---
@@ -200,10 +257,17 @@ app.js.onImuData()
   ├──► database.pushImuSample()→ Firebase realtime/{uid}/imu
   └──► (30s interval) database.flushImuBatch() → sessions/{id}/batches
 
+Periodic Analysis (every 30s):
+  SleepAnalysis.respiratoryRate(buffer, hz)       → updateRespDisplay()
+  SleepAnalysis.sleepStageTimeline(buffer, hz)    → updateStageDisplay()
+  SleepAnalysis.detectApneaEvents(buffer, hz)     → updateOsaDisplay()
+  Recommendations.generate({...})                 → generateRecommendations()
+
 End Session:
   SleepAnalysis.qualityScore(buffer, durationMs)
   SleepAnalysis.cardioRisk(profile, quality, hours)
-  database.endSession({qualityScore, durationMs, riskScore})
+  SleepAnalysis.biologicalAge(age, sessions)
+  database.endSession({qualityScore, durationMs, riskScore, stageTimeline, osaAhi, avgRr, bioAge})
 ```
 
 ---
@@ -232,6 +296,13 @@ End Session:
           "qualityScore": "number (0-100)",
           "durationMs": "number",
           "riskScore": "number (0-100)",
+          "qualityScore": "number (0-100)",
+          "durationMs": "number",
+          "riskScore": "number (0-100)",
+          "stageTimeline": ["deep|light|rem|awake"],
+          "osaAhi": "number",
+          "avgRr": "number (breaths/min)",
+          "bioAge": "number",
           "batches": {
             "{batchId}": {
               "count": "number",
@@ -277,7 +348,56 @@ ay_norm < -0.65  → Sisi Kiri (Left lateral)
 else             → Miring (Oblique)
 ```
 
-### 8.2 Skor Kualitas Tidur (0–100)
+### 8.2 Laju Napas dari IMU (v2.0)
+```
+Detrend az axis (kurangi rata-rata)
+Smooth dengan moving average 3-sample
+Hitung zero-crossings (positif → negatif)
+RR = (crossings / 2) / (durasi_detik / 60)   [breaths/min]
+Sanity check: valid jika 6 ≤ RR ≤ 40, else null
+```
+
+### 8.3 Klasifikasi Tahap Tidur per Epoch 30s (v2.0)
+```
+stddev = √(variance(magnitude(epoch_samples)))
+kurtosis = E[(x-μ)⁴] / σ⁴
+
+stddev > 0.18            → Awake
+stddev > 0.08            → Light
+kurtosis > 4.5 && < 0.07 → REM   (twitches/bursts)
+else                     → Deep
+```
+
+### 8.4 Deteksi Apnea (OSA Proxy, v2.0)
+```
+Jendela 10 detik:
+  rr = respiratoryRate(window)
+  intensity = movementIntensity(window)
+  if (rr === null && intensity < 0.02) → apnea event
+
+AHI = (jumlah_event / durasi_jam)
+  0–5    → Normal
+  5–15   → Ringan
+  15–30  → Sedang
+  >30    → Berat
+```
+
+### 8.5 Usia Biologis (Pavanello 2019, v2.0)
+```
+avgQuality  = rata-rata qualityScore dari sesi terakhir
+avgDurHrs   = rata-rata durasi tidur (jam)
+bedtimeSD   = standar deviasi waktu tidur (menit) — proxy circadian disruption
+
+offset =
+  (avgQuality < 65 ? +3 : avgQuality > 80 ? -2 : 0)   // quality component
++ (avgDurHrs < 6.5 ? +2 : avgDurHrs > 8.5 ? +1 : -1)  // duration component
++ (bedtimeSD > 60 ? +3 : bedtimeSD > 30 ? +1 : -1)     // circadian SD component
+
+bioAge = chronologicalAge + offset
+confidence = "low" (<3 sesi) | "medium" (<7) | "high" (≥7)
+```
+
+### 8.6 Skor Kualitas Tidur (0–100)
 ```
 intensity  = √(variance(magnitude(samples)))  × 5, clamped [0,1]
 movScore   = 100 - intensity × 80           (bobot 50%)
@@ -286,7 +406,7 @@ posScore   = 100 - positionChanges × 5       (bobot 20%)
 quality    = round(movScore×0.5 + durScore×0.3 + posScore×0.2)
 ```
 
-### 8.3 Skor Risiko Kardiovaskular (0–100)
+### 8.7 Skor Risiko Kardiovaskular (0–100)
 | Faktor | Poin |
 |--------|------|
 | Hipertensi | +20 |
@@ -309,9 +429,11 @@ quality    = round(movScore×0.5 + durScore×0.3 + posScore×0.2)
 | Frontend | HTML5, CSS3, Vanilla JavaScript (ES6+) |
 | BLE | Web Bluetooth API (Chrome/Edge) |
 | Visualisasi | Chart.js 4.4.0 |
+| PDF Export | jsPDF 2.5.1 |
+| Auth | Firebase Authentication (email/password + anonymous) |
 | Backend/DB | Firebase Realtime Database |
 | Hosting | Firebase Hosting |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions + google-github-actions/auth@v2 (service account) |
 | Protocol | BLE GATT (Nordic UART Service) |
 
 ---
@@ -326,9 +448,9 @@ Setiap `git push` ke branch `main` otomatis trigger:
 
 ### 10.2 Setup Awal (Satu Kali)
 1. Buat GitHub repository
-2. Dapatkan Firebase token: `firebase login:ci`
-3. Tambahkan ke GitHub Secrets: `Settings > Secrets > FIREBASE_TOKEN`
-4. Push ke main → deploy otomatis
+2. Buat Service Account Firebase di Google Cloud Console
+3. Download JSON key → upload ke GitHub Secrets sebagai `FIREBASE_SERVICE_ACCOUNT`
+4. Push ke main → deploy otomatis via `google-github-actions/auth@v2`
 
 ### 10.3 Perintah Manual
 ```bash
@@ -348,22 +470,26 @@ firebase serve
 
 | Fase | Fitur | Status |
 |------|-------|--------|
-| **v1.0** (sekarang) | BLE + real-time monitoring + Firebase + basic analytics | ✅ Done |
-| **v1.1** | Autentikasi Firebase (login/register) | Planned |
-| **v1.2** | Machine learning lokal (TensorFlow.js) untuk klasifikasi tahap tidur | Planned |
-| **v1.3** | Notifikasi push (FCM) dan laporan harian | Planned |
-| **v2.0** | Sensor tambahan: suhu/kelembaban (environment monitoring) | Planned |
-| **v2.1** | Integrasi dengan perangkat medis (pulse oximeter via BLE) | Planned |
+| **v1.0** | BLE + real-time monitoring + Firebase + basic analytics | ✅ Done |
+| **v1.1** | Autentikasi Firebase (email/password + anonymous) | ✅ Done |
+| **v1.2** | Klasifikasi tahap tidur rule-based (stddev + kurtosis per epoch 30s) | ✅ Done |
+| **v2.0** | OSA proxy (AHI), laju napas IMU, usia biologis, rekomendasi adaptif, PDF export | ✅ Done |
+| **v1.3** | Notifikasi push (FCM) dan laporan harian otomatis | ⏳ Planned |
+| **v2.1** | Environment monitoring: suhu + kelembaban (DHT22 pada ESP32) | ⏳ Planned (butuh hardware) |
+| **v2.2** | Integrasi pulse oximeter via BLE (SpO₂ + heart rate) | ⏳ Planned (butuh hardware) |
 
 ---
 
-## 12. Limitasi Saat Ini (v1.0)
+## 12. Limitasi Saat Ini (v2.0)
 
 1. **Web Bluetooth API** hanya tersedia di Chrome/Edge — tidak di Safari/Firefox
-2. Algoritma skor kualitas tidur masih rule-based (belum ML)
-3. Tidak ada autentikasi — data berdasarkan UID lokal (localStorage)
-4. Raw IMU samples tidak disimpan per-titik (hanya batch summary) untuk menghemat kuota Firebase
+2. Klasifikasi tahap tidur masih rule-based (stddev + kurtosis); akurasi lebih rendah dari EEG/PSG
+3. **Laju napas** dihitung dari axis az (gerakan kepala/bantal) — dapat terganggu oleh gerakan tubuh besar
+4. **OSA AHI** adalah proxy, bukan diagnosis klinis — tidak menggantikan pemeriksaan PSG
+5. **Usia biologis** menggunakan formula sederhana berbasis Pavanello 2019 — bukan biomarker langsung (telomere)
+6. Raw IMU samples tidak disimpan per-titik (hanya batch summary + analysis results) untuk menghemat kuota Firebase
+7. Environment monitoring (suhu/kelembaban) belum tersedia — menunggu integrasi DHT22 pada firmware ESP32
 
 ---
 
-*Dokumen ini merupakan draft perancangan dan akan diupdate seiring pengembangan.*
+*Dokumen ini diupdate sesuai perkembangan aktual. Versi terakhir: 2.0 (2 Mei 2026).*
