@@ -317,6 +317,158 @@ const SleepAnalysis = {
     return { score, level, domainA: dA, domainB: dB, domainC: dC };
   },
 
+  // ── Longevity Index (0–100) ───────────────────────────
+  // Composite: duration quality + circadian + debt + CVD inverse
+  // Evidence: Cappuccio 2011 EHJ, Itani 2017 SMR, Jike 2017 SMR,
+  //           Lehodey 2025 AlzRes, Lunsford-Avery 2021 Sleep
+  longevityIndex(profile, sessions) {
+    const recent = sessions && sessions.length ? sessions.slice(-30) : [];
+    if (recent.length < 3) return { score: null, grade: null, yearsImpact: 0, components: {}, confidence: 'low' };
+
+    const avgQ   = _avg(recent.map(s => s.qualityScore || 50));
+    const avgDur = _avg(recent.map(s => (s.durationMs || 25200000) / 3600000));
+
+    // Bedtime SD (circadian regularity)
+    const bts = recent.filter(s => s.startTime).map(s => {
+      const d = new Date(s.startTime); let h = d.getHours() + d.getMinutes() / 60;
+      if (h < 6) h += 24; return h;
+    });
+    const bMean = _avg(bts);
+    const bedSD = bts.length >= 3 ? Math.sqrt(_avg(bts.map(t => (t - bMean) ** 2))) : 1.5;
+
+    // Duration component (U-curve: Cappuccio 2011)
+    let durComp;
+    if      (avgDur >= 7   && avgDur <= 8.5) durComp = 100;
+    else if (avgDur >= 6.5 && avgDur <  7)   durComp = 80;
+    else if (avgDur >  8.5 && avgDur <= 9)   durComp = 80;
+    else if (avgDur >= 6   && avgDur <  6.5) durComp = 55;
+    else if (avgDur >  9   && avgDur <= 10)  durComp = 55;
+    else if (avgDur <  6)   durComp = Math.max(0,  avgDur / 6 * 40);
+    else                    durComp = Math.max(0, (12 - avgDur) / 3 * 40);
+
+    // Circadian component (Lehodey 2025: SD → telomere shortening)
+    let circComp;
+    if      (bedSD < 0.25) circComp = 100;
+    else if (bedSD < 0.5)  circComp = 88;
+    else if (bedSD < 1)    circComp = 70;
+    else if (bedSD < 2)    circComp = 45;
+    else                   circComp = Math.max(0, 100 - bedSD * 25);
+
+    // Sleep debt component (7-day)
+    const last7     = recent.slice(-7);
+    const weekDebt  = last7.reduce((a, s) => a + Math.max(0, 7 - (s.durationMs || 0) / 3600000), 0);
+    const debtComp  = Math.max(0, 100 - weekDebt * 12);
+
+    // CVD inverse (lower ZCS score = better longevity)
+    const zcs      = this.zcsScore(profile, sessions);
+    const cvdComp  = Math.max(0, 100 - zcs.score);
+
+    const score = Math.round(
+      durComp  * 0.22 +
+      avgQ     * 0.28 +
+      circComp * 0.20 +
+      debtComp * 0.15 +
+      cvdComp  * 0.15
+    );
+
+    let grade;
+    if      (score >= 85) grade = { letter: 'A', label: 'Excellent',       cls: 'good'   };
+    else if (score >= 70) grade = { letter: 'B', label: 'Baik',            cls: 'good'   };
+    else if (score >= 55) grade = { letter: 'C', label: 'Cukup',           cls: 'warn'   };
+    else if (score >= 40) grade = { letter: 'D', label: 'Di Bawah Rata',   cls: 'warn'   };
+    else                  grade = { letter: 'F', label: 'Buruk',           cls: 'danger' };
+
+    // Life-years impact (Cappuccio 2011: U-curve mortality RR)
+    let yearsImpact = 0;
+    if      (avgQ >= 85 && avgDur >= 7 && avgDur <= 8.5 && bedSD < 0.5) yearsImpact = +2.5;
+    else if (avgQ >= 70 && avgDur >= 6.5 && avgDur <= 9)                 yearsImpact = +0.8;
+    else if (avgQ < 55  && avgDur < 6)                                    yearsImpact = -3.5;
+    else if (avgQ < 55  || avgDur < 6)                                    yearsImpact = -1.8;
+    else if (avgDur > 9.5)                                                yearsImpact = -1.2;
+
+    // Stage quality gap (ideal: deep 20%, REM 25%)
+    const lastSession = recent[recent.length - 1];
+    const stagePct = lastSession && lastSession.stageSummary ? lastSession.stageSummary : null;
+    let stageGap = null;
+    if (stagePct) {
+      const deepGap = Math.max(0, 20 - (stagePct.deep  || 0));
+      const remGap  = Math.max(0, 25 - (stagePct.rem   || 0));
+      stageGap = { deepGap, remGap, deepActual: stagePct.deep || 0, remActual: stagePct.rem || 0 };
+    }
+
+    return {
+      score,
+      grade,
+      yearsImpact,
+      stageGap,
+      components: {
+        duration:   Math.round(durComp),
+        quality:    Math.round(avgQ),
+        circadian:  Math.round(circComp),
+        debt:       Math.round(debtComp),
+        cvdInverse: Math.round(cvdComp)
+      },
+      confidence: recent.length >= 14 ? 'high' : recent.length >= 7 ? 'medium' : 'low'
+    };
+  },
+
+  // ── Sleep Debt ────────────────────────────────────────
+  // Axelsson et al. (2020): ~1.5h extra sleep repays 1h of debt
+  sleepDebt(sessions, targetHrs = 7.5) {
+    if (!sessions || !sessions.length) return { weekly: 0, monthly: 0, recoveryNights: 0, pctOptimal: 100 };
+    const dur = s => (s.durationMs || 0) / 3600000;
+    const last7  = sessions.slice(-7);
+    const last30 = sessions.slice(-30);
+    const weekly  = Math.round(last7 .reduce((a, s) => a + Math.max(0, targetHrs - dur(s)), 0) * 10) / 10;
+    const monthly = Math.round(last30.reduce((a, s) => a + Math.max(0, targetHrs - dur(s)), 0) * 10) / 10;
+    const recoveryNights = Math.min(14, Math.ceil(weekly / 1.5));
+    const pctOptimal = Math.round(Math.max(0, Math.min(100, (1 - weekly / (7 * targetHrs)) * 100)));
+    return { weekly, monthly, recoveryNights, pctOptimal };
+  },
+
+  // ── Cognitive Performance ─────────────────────────────
+  // Van Dongen et al. (2003 Sleep): each hour of chronic restriction
+  // below 8h ≡ measurable psychomotor vigilance decline (~12% / hr).
+  cognitivePerformance(sessions) {
+    if (!sessions || sessions.length < 2) return { score: null, label: '—', trend: 0 };
+    const last7 = sessions.slice(-7);
+    const avgDur = _avg(last7.map(s => (s.durationMs || 25200000) / 3600000));
+    const avgQ   = _avg(last7.map(s => s.qualityScore || 50));
+    const durDeficit = Math.max(0, 8 - avgDur);
+    const base       = Math.max(0, 100 - durDeficit * 12);
+    const qualAdj    = ((avgQ - 50) / 50) * 15; // −15 to +15
+    const score      = Math.round(Math.min(100, Math.max(0, base + qualAdj)));
+    let label;
+    if      (score >= 90) label = 'Optimal';
+    else if (score >= 75) label = 'Baik';
+    else if (score >= 60) label = 'Cukup';
+    else if (score >= 45) label = 'Menurun';
+    else                  label = 'Kritis';
+    // Trend: compare last 3 vs prev 4
+    const half1 = sessions.slice(-7, -3);
+    const half2 = sessions.slice(-3);
+    const trend = half1.length && half2.length
+      ? _avg(half2.map(s => s.qualityScore || 50)) - _avg(half1.map(s => s.qualityScore || 50))
+      : 0;
+    return { score, label, trend: Math.round(trend * 10) / 10 };
+  },
+
+  // ── Stage Quality Gap ─────────────────────────────────
+  // Compare last session's stage % to evidence-based optimal ranges
+  stageQuality(stageSummary) {
+    if (!stageSummary) return null;
+    const ideal = { deep: 20, rem: 25, light: 50, awake: 5 };
+    const gaps  = {};
+    let totalGap = 0;
+    for (const [k, v] of Object.entries(ideal)) {
+      const actual = stageSummary[k] || 0;
+      gaps[k] = { actual, ideal: v, gap: actual - v };
+      totalGap += Math.abs(actual - v);
+    }
+    const score = Math.max(0, 100 - totalGap * 1.2);
+    return { gaps, score: Math.round(score) };
+  },
+
   // ── Cardiovascular Risk (0–100) ───────────────────────
   cardioRisk(profile, qualityScore, durationHrs) {
     let risk = 0;

@@ -592,6 +592,153 @@
         </div>
         <p class="bio-note">ZCS mengintegrasikan data IMU real-time dengan faktor risiko klinis. Tidak menggantikan evaluasi medis. Ref: Framingham, SCORE2, SLR ZLEEP 2024.</p>
       </div>
+
+      <!-- ── LONGEVITY SECTION ──────────────────────────────── -->
+      <div class="longevity-section-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Longevity &amp; Kesehatan Jangka Panjang</span>
+      </div>
+
+      <div class="longevity-grid">
+
+        <!-- Longevity Index -->
+        <div class="analysis-detail-card longevity-main">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Longevity Index
+          </h3>
+
+          <div class="lng-hero">
+            <div class="lng-grade-wrap">
+              <div class="lng-grade" id="lng-grade">—</div>
+              <div class="lng-grade-sub" id="lng-grade-label">—</div>
+            </div>
+            <div class="lng-mid">
+              <div class="lng-score-num" id="lng-score">—</div>
+              <div class="lng-score-sub">/ 100</div>
+            </div>
+            <div class="lng-years-badge" id="lng-years-badge">—</div>
+          </div>
+
+          <div class="lng-bars" id="lng-bars">
+            <div class="lng-bar-row">
+              <span class="lng-bar-lbl">Durasi</span>
+              <div class="lng-bar-track"><div class="lng-bar-fill purple" id="lng-bar-dur" style="width:0%"></div></div>
+              <span class="lng-bar-val" id="lng-val-dur">—</span>
+            </div>
+            <div class="lng-bar-row">
+              <span class="lng-bar-lbl">Kualitas</span>
+              <div class="lng-bar-track"><div class="lng-bar-fill teal" id="lng-bar-qual" style="width:0%"></div></div>
+              <span class="lng-bar-val" id="lng-val-qual">—</span>
+            </div>
+            <div class="lng-bar-row">
+              <span class="lng-bar-lbl">Sirkadian</span>
+              <div class="lng-bar-track"><div class="lng-bar-fill violet" id="lng-bar-circ" style="width:0%"></div></div>
+              <span class="lng-bar-val" id="lng-val-circ">—</span>
+            </div>
+            <div class="lng-bar-row">
+              <span class="lng-bar-lbl">Bebas Hutang</span>
+              <div class="lng-bar-track"><div class="lng-bar-fill green" id="lng-bar-debt" style="width:0%"></div></div>
+              <span class="lng-bar-val" id="lng-val-debt">—</span>
+            </div>
+            <div class="lng-bar-row">
+              <span class="lng-bar-lbl">CVD Invers</span>
+              <div class="lng-bar-track"><div class="lng-bar-fill orange" id="lng-bar-cvd" style="width:0%"></div></div>
+              <span class="lng-bar-val" id="lng-val-cvd">—</span>
+            </div>
+          </div>
+
+          <!-- Stage quality gap -->
+          <div class="stage-quality-gap" id="stage-quality-gap" style="display:none">
+            <div class="sqg-row">
+              <span>Deep Sleep</span>
+              <div class="sqg-bars">
+                <div class="sqg-bar ideal" id="sqg-deep-ideal"></div>
+                <div class="sqg-bar actual" id="sqg-deep-actual"></div>
+              </div>
+              <span class="sqg-vals"><span id="sqg-deep-val">—</span> / 20% ideal</span>
+            </div>
+            <div class="sqg-row">
+              <span>REM Sleep</span>
+              <div class="sqg-bars">
+                <div class="sqg-bar ideal teal" id="sqg-rem-ideal"></div>
+                <div class="sqg-bar actual teal" id="sqg-rem-actual"></div>
+              </div>
+              <span class="sqg-vals"><span id="sqg-rem-val">—</span> / 25% ideal</span>
+            </div>
+          </div>
+
+          <p class="bio-note">Cappuccio EHJ 2011 · Itani SMR 2017 · Jike SMR 2017 · Lehodey AlzRes 2025 · Lunsford-Avery Sleep 2021</p>
+        </div>
+
+        <!-- Sleep Debt Tracker -->
+        <div class="analysis-detail-card">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Hutang Tidur
+          </h3>
+
+          <div class="debt-hero">
+            <div class="debt-num" id="debt-weekly-num">—</div>
+            <div class="debt-unit">jam (7 hari)</div>
+          </div>
+
+          <div class="debt-bar-wrap">
+            <div class="debt-bar-track">
+              <div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div>
+            </div>
+            <div class="debt-bar-labels">
+              <span id="debt-pct-label">—% optimal</span>
+              <span id="debt-optimal-label">Target 7.5 jam/malam</span>
+            </div>
+          </div>
+
+          <div class="debt-stats">
+            <div class="debt-stat">
+              <span class="debt-stat-val" id="debt-monthly-num">—</span>
+              <span class="debt-stat-lbl">jam (30 hari)</span>
+            </div>
+            <div class="debt-stat">
+              <span class="debt-stat-val" id="debt-recovery-num">—</span>
+              <span class="debt-stat-lbl">malam pemulihan</span>
+            </div>
+          </div>
+          <p class="bio-note">Ref: Axelsson et al. — 1 jam defisit membutuhkan ~1.5 jam ekstra untuk dipulihkan.</p>
+        </div>
+
+        <!-- Cognitive Performance -->
+        <div class="analysis-detail-card">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Performa Kognitif
+          </h3>
+
+          <div class="cog-wrap">
+            <canvas id="cog-gauge" width="180" height="100"></canvas>
+            <div class="cog-info">
+              <div class="cog-pct" id="cog-pct">—</div>
+              <div class="cog-label" id="cog-label">—</div>
+              <div class="cog-trend" id="cog-trend"></div>
+            </div>
+          </div>
+
+          <div class="cog-factors">
+            <div class="cog-factor">
+              <span class="cf-lbl">Tidur 7 hari terakhir</span>
+              <span class="cf-val" id="cog-dur-avg">— jam</span>
+            </div>
+            <div class="cog-factor">
+              <span class="cf-lbl">Efek defisit tidur</span>
+              <span class="cf-val danger" id="cog-deficit-effect">—</span>
+            </div>
+          </div>
+          <p class="bio-note">Ref: Van Dongen et al. 2003 Sleep — setiap 1 jam di bawah 8 jam ≈ 12% penurunan fungsi kognitif kumulatif.</p>
+        </div>
+
+      </div><!-- /longevity-grid -->
     </section>
 
     <!-- ════════════════════════════════════════════════════

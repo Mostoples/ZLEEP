@@ -42,6 +42,7 @@ const app = (() => {
 
     if (window.ZleepScene) ZleepScene.init();
     updateZcsDisplay();
+    updateLongevityDisplay();
   }
 
   // ── Onboarding ────────────────────────────────────────────
@@ -313,6 +314,7 @@ const app = (() => {
     updateAnalysisSection(summary, ahi);
     generateRecommendations();
     updateZcsDisplay();
+    updateLongevityDisplay();
 
     showToast(`Sesi selesai — Kualitas: ${quality ?? '—'} | AHI: ${ahi}`);
     loadHistory(); // refresh history after session
@@ -704,9 +706,10 @@ const app = (() => {
       </div>`;
     }).join('');
 
-    // Update bio age and ZCS after loading history
+    // Update bio age, ZCS and longevity after loading history
     updateBioAgeDisplay();
     updateZcsDisplay();
+    updateLongevityDisplay();
   }
 
   // ── Profile ───────────────────────────────────────────────
@@ -721,7 +724,7 @@ const app = (() => {
       weight: w || profile.weight
     };
     if (h && w) profile.bmi = +(w / ((h/100)**2)).toFixed(1);
-    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); showToast('Profil disimpan');
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); updateLongevityDisplay(); showToast('Profil disimpan');
   }
   function saveRiskFactors() {
     profile = { ...profile,
@@ -731,7 +734,7 @@ const app = (() => {
       smoker:       document.getElementById('rf-smoker').checked,
       heartHistory: document.getElementById('rf-heart-history').checked,
       insomnia:     document.getElementById('rf-insomnia').checked };
-    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); showToast('Faktor risiko disimpan');
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); updateLongevityDisplay(); showToast('Faktor risiko disimpan');
   }
   function savePreferences() {
     profile = { ...profile,
@@ -739,7 +742,7 @@ const app = (() => {
       duration: document.getElementById('pf-duration').value,
       activity: document.getElementById('pf-activity')?.value || 'moderate'
     };
-    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); showToast('Preferensi disimpan');
+    zdb.saveProfile(profile); persist(); updateProfileCompletion(); updateZcsDisplay(); updateLongevityDisplay(); showToast('Preferensi disimpan');
   }
 
   function updateProfileCompletion() {
@@ -841,6 +844,151 @@ const app = (() => {
     setBar('zcs-bar-a', 'zcs-val-a', zcs.domainA, 45);
     setBar('zcs-bar-b', 'zcs-val-b', zcs.domainB, 40);
     setBar('zcs-bar-c', 'zcs-val-c', zcs.domainC, 15);
+  }
+
+  // ── Longevity Display ─────────────────────────────────────
+  function updateLongevityDisplay() {
+    const lng  = SleepAnalysis.longevityIndex(profile, sessions);
+    const debt = SleepAnalysis.sleepDebt(sessions);
+    const cog  = SleepAnalysis.cognitivePerformance(sessions);
+
+    // ─ Longevity Index ─
+    const gradeEl = document.getElementById('lng-grade');
+    const gradeLbl = document.getElementById('lng-grade-label');
+    const scoreEl  = document.getElementById('lng-score');
+    const yearsEl  = document.getElementById('lng-years-badge');
+
+    if (lng.score === null) {
+      if (gradeEl)  gradeEl.textContent  = '—';
+      if (scoreEl)  scoreEl.textContent  = '—';
+      if (yearsEl)  { yearsEl.textContent = 'Butuh ≥3 sesi'; yearsEl.className = 'lng-years-badge neutral'; }
+    } else {
+      if (gradeEl)  { gradeEl.textContent = lng.grade.letter; gradeEl.className = 'lng-grade ' + lng.grade.cls; }
+      if (gradeLbl) gradeLbl.textContent = lng.grade.label;
+      if (scoreEl)  scoreEl.textContent = lng.score;
+      if (yearsEl) {
+        const yr = lng.yearsImpact;
+        const sign = yr > 0 ? '+' : '';
+        yearsEl.textContent = yr !== 0 ? `${sign}${yr} tahun hidup` : '±0 tahun';
+        yearsEl.className   = 'lng-years-badge ' + (yr > 0 ? 'positive' : yr < 0 ? 'negative' : 'neutral');
+      }
+    }
+
+    // Component bars
+    const setLng = (fillId, valId, val) => {
+      const b = document.getElementById(fillId);
+      const v = document.getElementById(valId);
+      if (b) b.style.width = (val || 0) + '%';
+      if (v) v.textContent = (val != null ? val : '—');
+    };
+    if (lng.components) {
+      setLng('lng-bar-dur',  'lng-val-dur',  lng.components.duration);
+      setLng('lng-bar-qual', 'lng-val-qual', lng.components.quality);
+      setLng('lng-bar-circ', 'lng-val-circ', lng.components.circadian);
+      setLng('lng-bar-debt', 'lng-val-debt', lng.components.debt);
+      setLng('lng-bar-cvd',  'lng-val-cvd',  lng.components.cvdInverse);
+    }
+
+    // Stage quality gap
+    const lastSesh = sessions && sessions.length ? sessions[sessions.length - 1] : null;
+    const sqg = SleepAnalysis.stageQuality(lastSesh && lastSesh.stageSummary ? lastSesh.stageSummary : null);
+    const sqgWrap = document.getElementById('stage-quality-gap');
+    if (sqg && sqgWrap) {
+      sqgWrap.style.display = '';
+      const setBar = (idealId, actualId, valId, actual, ideal) => {
+        const ib = document.getElementById(idealId);
+        const ab = document.getElementById(actualId);
+        const vl = document.getElementById(valId);
+        if (ib) ib.style.width = ideal + '%';
+        if (ab) ab.style.width = actual + '%';
+        if (vl) vl.textContent = actual + '%';
+      };
+      setBar('sqg-deep-ideal', 'sqg-deep-actual', 'sqg-deep-val', sqg.gaps.deep.actual, 20);
+      setBar('sqg-rem-ideal',  'sqg-rem-actual',  'sqg-rem-val',  sqg.gaps.rem.actual,  25);
+    }
+
+    // ─ Sleep Debt ─
+    const debtNum  = document.getElementById('debt-weekly-num');
+    const debtBar  = document.getElementById('debt-bar-fill');
+    const debtPct  = document.getElementById('debt-pct-label');
+    const debtMon  = document.getElementById('debt-monthly-num');
+    const debtRec  = document.getElementById('debt-recovery-num');
+    if (debtNum) {
+      debtNum.textContent = debt.weekly;
+      debtNum.className   = 'debt-num ' + (debt.weekly <= 2 ? 'low' : debt.weekly <= 5 ? 'mid' : 'high');
+    }
+    if (debtBar)  debtBar.style.width       = Math.min(100, debt.weekly / (7 * 7.5) * 100) + '%';
+    if (debtPct)  debtPct.textContent        = debt.pctOptimal + '% optimal';
+    if (debtMon)  debtMon.textContent        = debt.monthly + ' jam';
+    if (debtRec)  debtRec.textContent        = debt.recoveryNights + ' malam';
+
+    // ─ Cognitive Performance ─
+    const cogPct   = document.getElementById('cog-pct');
+    const cogLbl   = document.getElementById('cog-label');
+    const cogTrend = document.getElementById('cog-trend');
+    const cogDur   = document.getElementById('cog-dur-avg');
+    const cogDef   = document.getElementById('cog-deficit-effect');
+
+    if (cog.score !== null) {
+      const cls = cog.score >= 75 ? 'good' : cog.score >= 55 ? 'warn' : 'danger';
+      if (cogPct)   { cogPct.textContent = cog.score + '%'; cogPct.className = 'cog-pct ' + cls; }
+      if (cogLbl)   cogLbl.textContent = cog.label;
+      if (cogTrend && cog.trend !== 0) {
+        const dir = cog.trend > 0 ? '↑' : '↓';
+        cogTrend.textContent = `${dir} ${Math.abs(cog.trend)} poin (7 hari)`;
+        cogTrend.className   = 'cog-trend ' + (cog.trend > 0 ? 'up' : 'down');
+      }
+      const last7  = sessions.slice(-7);
+      const avgDur = last7.length ? (last7.reduce((a, s) => a + (s.durationMs || 0), 0) / last7.length / 3600000).toFixed(1) : '—';
+      if (cogDur)   cogDur.textContent = avgDur + ' jam/malam';
+      const deficit = Math.max(0, 8 - parseFloat(avgDur || 8));
+      const penurunan = Math.round(deficit * 12);
+      if (cogDef)   cogDef.textContent = penurunan > 0 ? `-${penurunan}%` : 'Tidak ada';
+
+      // Draw arc gauge on canvas
+      _drawCogGauge(cog.score);
+    } else {
+      if (cogPct)  cogPct.textContent  = '—';
+      if (cogLbl)  cogLbl.textContent  = 'Butuh ≥2 sesi';
+    }
+  }
+
+  function _drawCogGauge(pct) {
+    const canvas = document.getElementById('cog-gauge');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H - 10;
+    const r  = Math.min(cx, cy) - 6;
+    ctx.clearRect(0, 0, W, H);
+
+    // Track arc
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, 0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth   = 10;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+
+    // Value arc
+    const angle = Math.PI * (pct / 100);
+    const color = pct >= 75 ? '#34D399' : pct >= 55 ? '#FB923C' : '#F87171';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, Math.PI + angle);
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 10;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+
+    // Glow
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, Math.PI + angle);
+    ctx.strokeStyle = color.replace(')', ', 0.25)').replace('rgb', 'rgba');
+    ctx.lineWidth   = 18;
+    ctx.lineCap     = 'round';
+    ctx.globalAlpha = 0.4;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   // ── Circadian ─────────────────────────────────────────────

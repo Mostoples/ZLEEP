@@ -1199,6 +1199,112 @@ body::after {
 .zcs-bar-fill  { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.4,0,.2,1); }
 .zcs-bar-val   { width: 44px; text-align: right; font-weight: 700; font-size: 11px; }
 
+/* ── LONGEVITY SECTION ────────────────────────────────────── */
+.longevity-section-header {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 700; color: var(--violet);
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--border);
+}
+.longevity-section-header svg { width: 18px; height: 18px; stroke: var(--violet); }
+
+.longevity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* Longevity Index card hero */
+.longevity-main { grid-column: span 1; }
+.lng-hero {
+  display: flex; align-items: center; gap: 18px;
+  padding: 12px 0 4px;
+}
+.lng-grade-wrap { text-align: center; }
+.lng-grade {
+  font-size: 58px; font-weight: 900; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -.04em;
+  background: linear-gradient(135deg, #A78BFA 0%, #22D3EE 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.lng-grade.good   { background: linear-gradient(135deg, #34D399 0%, #22D3EE 100%); -webkit-background-clip: text; background-clip: text; }
+.lng-grade.warn   { background: linear-gradient(135deg, #FB923C 0%, #FBBF24 100%); -webkit-background-clip: text; background-clip: text; }
+.lng-grade.danger { background: linear-gradient(135deg, #F87171 0%, #FB923C 100%); -webkit-background-clip: text; background-clip: text; }
+.lng-grade-sub { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+.lng-mid { text-align: center; flex: 1; }
+.lng-score-num {
+  font-size: 40px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums;
+}
+.lng-score-sub { font-size: 11px; color: var(--muted); }
+
+.lng-years-badge {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 800;
+  white-space: nowrap;
+}
+.lng-years-badge.positive { background: rgba(52,211,153,0.15); color: var(--success); border: 1px solid rgba(52,211,153,0.3); }
+.lng-years-badge.negative { background: rgba(248,113,113,0.12); color: var(--danger);  border: 1px solid rgba(248,113,113,0.3); }
+.lng-years-badge.neutral  { background: rgba(255,255,255,0.07); color: var(--muted);   border: 1px solid var(--border); }
+
+/* Component bars */
+.lng-bars { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; }
+.lng-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.lng-bar-lbl { width: 82px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+.lng-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+.lng-bar-fill { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+.lng-bar-fill.purple { background: var(--primary); }
+.lng-bar-fill.teal   { background: var(--teal); }
+.lng-bar-fill.violet { background: #A78BFA; }
+.lng-bar-fill.green  { background: var(--success); }
+.lng-bar-fill.orange { background: var(--warn); }
+.lng-bar-val { width: 36px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-dim); }
+
+/* Stage quality gap */
+.stage-quality-gap { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.sqg-row { display: flex; align-items: center; gap: 8px; font-size: 11px; margin-bottom: 6px; }
+.sqg-row > span:first-child { width: 70px; color: var(--muted); font-weight: 600; }
+.sqg-bars { flex: 1; position: relative; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.sqg-bar { position: absolute; top: 0; left: 0; height: 100%; border-radius: 4px; transition: width .8s ease; }
+.sqg-bar.ideal  { background: rgba(255,255,255,0.15); }
+.sqg-bar.actual { background: var(--primary); }
+.sqg-bar.actual.teal { background: var(--teal); }
+.sqg-vals { font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+/* Sleep Debt */
+.debt-hero { text-align: center; padding: 8px 0; }
+.debt-num { font-size: 48px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+.debt-num.low  { color: var(--success); }
+.debt-num.mid  { color: var(--warn); }
+.debt-num.high { color: var(--danger); }
+.debt-unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.debt-bar-wrap { margin: 12px 0; }
+.debt-bar-track { height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
+.debt-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; background: linear-gradient(90deg, var(--success) 0%, var(--warn) 50%, var(--danger) 100%); background-size: 200% 100%; }
+.debt-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+.debt-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.debt-stat { flex: 1; min-width: 80px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px 10px; }
+.debt-stat-val { display: block; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.debt-stat-lbl { font-size: 10px; color: var(--muted); }
+
+/* Cognitive Performance */
+.cog-wrap { display: flex; align-items: center; gap: 16px; margin: 8px 0; }
+#cog-gauge { flex-shrink: 0; }
+.cog-info { flex: 1; }
+.cog-pct { font-size: 38px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+.cog-pct.good   { color: var(--success); }
+.cog-pct.warn   { color: var(--warn); }
+.cog-pct.danger { color: var(--danger); }
+.cog-label { font-size: 13px; font-weight: 700; color: var(--text-dim); margin-top: 2px; }
+.cog-trend { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.cog-trend.up   { color: var(--success); }
+.cog-trend.down { color: var(--danger); }
+.cog-factors { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+.cog-factor { display: flex; justify-content: space-between; font-size: 12px; }
+.cf-lbl { color: var(--muted); }
+.cf-val { font-weight: 700; }
+.cf-val.danger { color: var(--danger); }
+
 /* ── IMU CUBE CARD ────────────────────────────────────────── */
 .cube-card {
   display: flex;
