@@ -325,7 +325,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Kualitas Tidur</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg id="icon-quality" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </div>
           <div class="metric-value" id="sleep-quality-val">—</div>
           <div class="metric-badge" id="sleep-quality-badge">Belum ada sesi</div>
@@ -335,7 +335,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Tahap Tidur</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2v20"/></svg>
+            <svg id="icon-stage" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2v20"/></svg>
           </div>
           <div class="metric-value" id="sleep-stage-val">—</div>
           <div class="stage-bar-mini" id="stage-bar-mini">
@@ -349,7 +349,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Frekuensi Napas</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 8a4 4 0 0 1 0 8"/></svg>
+            <svg id="icon-resp" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 8a4 4 0 0 1 0 8"/></svg>
           </div>
           <div class="metric-value" id="resp-rate-val">—</div>
           <div class="metric-badge" id="resp-rate-badge">napas/menit</div>
@@ -358,7 +358,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Posisi Tidur</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <svg id="icon-pos" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           </div>
           <div class="metric-value" id="sleep-position-val">—</div>
           <div id="position-icon" class="position-icon"><div class="position-body"></div></div>
@@ -367,7 +367,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Indeks Gerakan</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg id="icon-move" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <div class="metric-value" id="movement-val">0.00</div>
           <div class="gauge-container"><canvas id="gauge-canvas" width="120" height="70"></canvas></div>
@@ -376,7 +376,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Risiko Apnea (AHI)</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/></svg>
+            <svg id="icon-apnea" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/></svg>
           </div>
           <div class="metric-value" id="osa-ahi-val">—</div>
           <div class="metric-badge" id="osa-badge">Belum ada data</div>
@@ -385,7 +385,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Risiko Kardiovaskular</span>
-            <svg class="metric-icon danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <svg id="icon-risk" class="metric-icon danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
           <div class="metric-value" id="risk-val">—</div>
           <div class="metric-badge" id="risk-badge">Monitoring...</div>
@@ -394,7 +394,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">Usia Biologis</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg id="icon-bio" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
           <div class="metric-value" id="bio-age-val">—</div>
           <div class="metric-badge" id="bio-age-badge">Butuh ≥3 sesi</div>
@@ -403,7 +403,7 @@
         <div class="metric-card">
           <div class="metric-header">
             <span class="metric-label">ZLEEP-CVD Score</span>
-            <svg class="metric-icon danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <svg id="icon-zcs" class="metric-icon danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           <div class="metric-value" id="zcs-val">—</div>
           <div class="metric-badge" id="zcs-badge">Menghitung...</div>
@@ -413,7 +413,7 @@
         <div class="metric-card wide">
           <div class="metric-header">
             <span class="metric-label">Ritme Sirkadian</span>
-            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <svg id="icon-circ" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <div class="circadian-bar">
             <div class="circadian-track">

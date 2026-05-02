@@ -386,15 +386,13 @@ body::after {
   border-radius: var(--radius);
   padding: 20px;
   display: flex; flex-direction: column; gap: 9px;
-  transition: border-color .25s, transform .25s, box-shadow .25s;
+  transition: border-color .18s, transform .18s ease-out, box-shadow .18s;
   box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06);
   cursor: default;
+  will-change: transform;
+  transform-style: preserve-3d;
 }
-.metric-card:hover {
-  border-color: rgba(123,108,246,0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 36px rgba(0,0,0,0.35), 0 0 0 1px rgba(123,108,246,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
-}
+/* hover handled by JS tilt — no competing CSS transform */
 
 .metric-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -479,6 +477,8 @@ body::after {
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: border-color .18s, transform .18s ease-out, box-shadow .18s;
+  will-change: transform;
 }
 .chart-header {
   display: flex; align-items: center; justify-content: space-between;

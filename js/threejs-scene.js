@@ -326,13 +326,191 @@ const ZleepScene = (() => {
   }
 
   // ══════════════════════════════════════════════════════════
+  // 4. ICON 3D CANVAS — one shared renderer, multi-viewport
+  //    Replaces the flat SVG metric-icons with spinning 3D shapes
+  // ══════════════════════════════════════════════════════════
+  let iR, iCanvas;
+  const iSlots = [];
+  let iRunning = false;
+
+  const SHAPES = {
+    moon:      () => new THREE.Mesh(
+      new THREE.TorusGeometry(0.52, 0.18, 16, 60),
+      new THREE.MeshPhongMaterial({ color: C.VIOLET, emissive: 0x3a1880, shininess: 90 })
+    ),
+    bars:      () => {
+      const g = new THREE.Group();
+      [[-0.38, 0.28, C.PURPLE], [0, 0.52, C.TEAL], [0.38, 0.18, C.VIOLET]].forEach(([x, h, col]) => {
+        const m = new THREE.Mesh(
+          new THREE.BoxGeometry(0.22, h, 0.22),
+          new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.25 })
+        );
+        m.position.set(x, h / 2 - 0.35, 0);
+        g.add(m);
+      });
+      return g;
+    },
+    wave:      () => new THREE.Mesh(
+      new THREE.TorusKnotGeometry(0.42, 0.13, 80, 12),
+      new THREE.MeshPhongMaterial({ color: C.TEAL, emissive: 0x0a4455, shininess: 110 })
+    ),
+    pillow:    () => {
+      const b = new THREE.BoxGeometry(1.1, 0.45, 0.75);
+      const m = new THREE.Mesh(b, new THREE.MeshPhongMaterial({ color: C.PURPLE, emissive: 0x221066, shininess: 60, transparent: true, opacity: 0.9 }));
+      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(b), new THREE.LineBasicMaterial({ color: C.VIOLET, transparent: true, opacity: 0.85 })));
+      return m;
+    },
+    octa:      () => new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.55),
+      new THREE.MeshPhongMaterial({ color: C.WARN, emissive: 0x5a1a00, shininess: 100 })
+    ),
+    icosa:     () => new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.52, 1),
+      new THREE.MeshPhongMaterial({ color: C.DANGER, emissive: 0x660000, shininess: 80 })
+    ),
+    dodeca:    () => new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.52),
+      new THREE.MeshPhongMaterial({ color: C.DANGER, emissive: 0x550022, shininess: 120 })
+    ),
+    hex:       () => new THREE.Mesh(
+      new THREE.CylinderGeometry(0.36, 0.5, 0.78, 6),
+      new THREE.MeshPhongMaterial({ color: C.SUCCESS, emissive: 0x0a3322, shininess: 100 })
+    ),
+    sphere:    () => {
+      const g = new THREE.Group();
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.46, 14, 10), new THREE.MeshPhongMaterial({ color: C.VIOLET, emissive: 0x2a0888, shininess: 70 }));
+      const w = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), new THREE.MeshBasicMaterial({ color: C.PURPLE, wireframe: true, transparent: true, opacity: 0.35 }));
+      g.add(s); g.add(w);
+      return g;
+    },
+    ring:      () => new THREE.Mesh(
+      new THREE.TorusGeometry(0.5, 0.08, 8, 72),
+      new THREE.MeshPhongMaterial({ color: C.TEAL, emissive: 0x0a4455, shininess: 90 })
+    ),
+  };
+
+  function _makeIconScene(shapeKey) {
+    const scene = new THREE.Scene();
+    const cam   = new THREE.PerspectiveCamera(46, 1, 0.1, 10);
+    cam.position.z = 2.4;
+
+    scene.add(new THREE.AmbientLight(0x1a0a44, 5));
+    const l1 = new THREE.PointLight(C.VIOLET, 6, 12); l1.position.set(1.5, 1.5, 2);   scene.add(l1);
+    const l2 = new THREE.PointLight(C.TEAL,   2, 6);  l2.position.set(-1.5, -1, 1);   scene.add(l2);
+
+    const mesh = (SHAPES[shapeKey] || SHAPES.sphere)();
+    scene.add(mesh);
+    return { scene, cam, mesh };
+  }
+
+  function initIconCanvas() {
+    if (!window.THREE) return;
+
+    iCanvas = document.createElement('canvas');
+    iCanvas.id = 'icons3d-canvas';
+    iCanvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:3;';
+    document.body.appendChild(iCanvas);
+
+    iR = new THREE.WebGLRenderer({ canvas: iCanvas, alpha: true, antialias: false });
+    iR.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    iR.setSize(innerWidth, innerHeight);
+    iR.autoClear = false;
+
+    const defs = [
+      { id: 'icon-quality', shape: 'moon'   },
+      { id: 'icon-stage',   shape: 'bars'   },
+      { id: 'icon-resp',    shape: 'wave'   },
+      { id: 'icon-pos',     shape: 'pillow' },
+      { id: 'icon-move',    shape: 'octa'   },
+      { id: 'icon-apnea',   shape: 'icosa'  },
+      { id: 'icon-risk',    shape: 'dodeca' },
+      { id: 'icon-bio',     shape: 'sphere' },
+      { id: 'icon-zcs',     shape: 'hex'    },
+      { id: 'icon-circ',    shape: 'ring'   },
+    ];
+
+    defs.forEach(({ id, shape }) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.opacity = '0'; // hide SVG, show 3D instead
+      const slot = _makeIconScene(shape);
+      iSlots.push({ el, ...slot, idx: iSlots.length });
+    });
+
+    window.addEventListener('resize', () => iR.setSize(innerWidth, innerHeight));
+    iRunning = true;
+    _tickIcons();
+  }
+
+  function _tickIcons() {
+    if (!iRunning || !iR) return;
+    requestAnimationFrame(_tickIcons);
+
+    const t = Date.now() * 0.001;
+    iR.clear();
+    iR.setScissorTest(true);
+
+    for (const slot of iSlots) {
+      const rect = slot.el.getBoundingClientRect();
+      if (!rect.width || rect.bottom < 0 || rect.top > innerHeight) continue;
+
+      const dpr = iR.getPixelRatio();
+      const x = Math.round(rect.left   * dpr);
+      const y = Math.round((innerHeight - rect.bottom) * dpr);
+      const w = Math.round(rect.width  * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (w < 1 || h < 1) continue;
+
+      iR.setViewport(x, y, w, h);
+      iR.setScissor(x, y, w, h);
+      slot.cam.aspect = w / h;
+      slot.cam.updateProjectionMatrix();
+
+      const spd = 0.55 + slot.idx * 0.04;
+      slot.mesh.rotation.x = t * spd * 0.6;
+      slot.mesh.rotation.y = t * spd;
+
+      iR.render(slot.scene, slot.cam);
+    }
+
+    iR.setScissorTest(false);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // 5. CARD TILT — CSS 3D perspective on hover
+  // ══════════════════════════════════════════════════════════
+  function initCardTilt() {
+    const sel = '.metric-card, .chart-card, .cube-card, .orb-hero';
+    document.querySelectorAll(sel).forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const nx = (e.clientX - r.left) / r.width  - 0.5;  // -0.5..+0.5
+        const ny = (e.clientY - r.top)  / r.height - 0.5;
+        card.style.transform     = `perspective(700px) rotateY(${nx * 13}deg) rotateX(${-ny * 9}deg) translateZ(6px)`;
+        card.style.boxShadow     = `${-nx * 18}px ${ny * 12}px 32px rgba(123,108,246,0.22)`;
+        card.style.borderColor   = 'rgba(123,108,246,0.35)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform   = '';
+        card.style.boxShadow   = '';
+        card.style.borderColor = '';
+      });
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════
   // Init all
   // ══════════════════════════════════════════════════════════
   function init() {
     if (!window.THREE) { console.warn('[ZLEEP] Three.js not loaded'); return; }
     initParticles();
     // Small delay to ensure canvases are rendered and sized
-    setTimeout(() => { initOrb(); initCube(); }, 200);
+    setTimeout(() => {
+      initOrb();
+      initCube();
+      initIconCanvas();
+      initCardTilt();
+    }, 250);
   }
 
   return { init, updateOrb, updateCube };
